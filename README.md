@@ -125,6 +125,35 @@ docker compose down
 docker compose down -v
 ```
 
+## Perintah Lengkap
+
+### Composer Scripts
+
+| Command | Keterangan |
+|---------|------------|
+| `composer setup` | Full setup: install, .env, key:generate, migrate, npm install, lefthook install, build |
+| `composer dev` | Jalankan semua service secara concurrent (artisan serve + queue + pail + vite) |
+| `composer format` | Auto-fix format dengan Laravel Pint |
+| `composer format:check` | Cek format tanpa mengubah file |
+| `composer analyse` | Static analysis dengan PHPStan |
+
+### npm Scripts
+
+| Command | Keterangan |
+|---------|------------|
+| `npm run dev` | Jalankan Vite dev server |
+| `npm run build` | Compile assets untuk produksi |
+| `npm run commit` | `git add .` + commitizen interactive prompt |
+
+### Lefthook (Git Hooks)
+
+Hooks dijalankan otomatis oleh Lefthook, tidak perlu manual:
+
+| Event | Yang dijalankan |
+|-------|-----------------|
+| `git commit` | `pint` (auto-fix) + `phpstan` (static analysis) + `commitlint` (validasi format) |
+| `git push` | `pint --test` + `pest` (semua test harus pass) |
+
 ## Environment Variables
 
 ### Application
@@ -268,12 +297,11 @@ Projek menggunakan [Lefthook](https://github.com/evilmartians/lefthook) untuk gi
 
 ## CI/CD
 
-Pipeline di `.github/workflows/ci.yml` menjalankan 4 job:
+Pipeline di `.github/workflows/ci.yml` menjalankan 3 job:
 
 1. **Lint & Format** - `pint --test`
 2. **Static Analysis** - `phpstan analyse`
 3. **Tests** - `pest --parallel` (dengan MySQL service)
-4. **Build Assets** - `npm ci && npm run build`
 
 Dijalankan otomatis pada push ke `main`/`dev` dan pull request ke `main`.
 
