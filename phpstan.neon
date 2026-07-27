@@ -10,7 +10,7 @@ parameters:
     level: 5
     excludePaths:
         - vendor
-        - node_modules
+        - node_modules (?)
         - bootstrap/cache
         - storage
         - public
