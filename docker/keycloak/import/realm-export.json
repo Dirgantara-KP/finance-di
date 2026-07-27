@@ -1,0 +1,47 @@
+{
+  "realm": "finance-di",
+  "enabled": true,
+  "displayName": "Finance DI",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "failureFactor": 5,
+  "clients": [
+    {
+      "clientId": "finance-di",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "",
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:8000"
+      ],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      },
+      {
+        "name": "user",
+        "description": "Default user role"
+      }
+    ]
+  },
+  "defaultRoles": ["user"]
+}

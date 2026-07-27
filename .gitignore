@@ -1,27 +1,49 @@
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+# Dependencies
 /node_modules
+/vendor
+
+# Build outputs
 /public/build
-/public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+
+# Environment
+/.env
+/.env.backup
+/.env.production
+
+# IDE
+/.vscode
+/.idea
+/.zed
+/.nova
+/.cursor
+/.codex
+
+# Dev tools
+.phpunit.cache
+.phpunit.result.cache
+.phpactor.json
+_ide_helper.php
+
+# Database
+/database/database.sqlite
+
+# Storage
 /storage/*.key
 /storage/pail
-/vendor
-_ide_helper.php
+/storage/logs/*
+/storage/framework/*
+
+# Docker
+docker-compose.override.yml
+
+# Lefthook
+lefthook-local.yml
+
+# Misc
+*.log
+*.DS_Store
+Thumbs.db
 Homestead.json
 Homestead.yaml
-Thumbs.db

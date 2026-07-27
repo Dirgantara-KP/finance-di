@@ -1,0 +1,27 @@
+min_version: "1.0.0"
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: pint
+      glob: "*.php"
+      run: vendor/bin/pint {staged_files}
+      stage_fixed: true
+
+    - name: phpstan
+      glob: "*.php"
+      run: vendor/bin/phpstan analyse --memory-limit=2G --no-progress
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: npx commitlint --edit {1}
+
+pre-push:
+  jobs:
+    - name: pint-check
+      glob: "*.php"
+      run: vendor/bin/pint --test {push_files}
+
+    - name: pest
+      run: vendor/bin/pest
