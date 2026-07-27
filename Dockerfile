@@ -1,4 +1,4 @@
-FROM php:8.3-fpm AS base
+FROM php:8.4-fpm AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev \

@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           tools: composer:v2
       - run: composer install --no-progress --prefer-dist --no-interaction
       - run: vendor/bin/pint --test
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           tools: composer:v2
       - run: composer install --no-progress --prefer-dist --no-interaction
       - run: vendor/bin/phpstan analyse --memory-limit=2G
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: pdo_mysql
           tools: composer:v2
       - run: composer install --no-progress --prefer-dist --no-interaction
@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
       - run: npm ci
       - run: npm run build

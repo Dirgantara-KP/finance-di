@@ -2,6 +2,11 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
+    "license": "proprietary",
+    "engines": {
+        "node": ">=22.0.0 <25.0.0",
+        "npm": ">=10.0.0 <12.0.0"
+    },
     "scripts": {
         "build": "vite build",
         "commit": "npx cz",
