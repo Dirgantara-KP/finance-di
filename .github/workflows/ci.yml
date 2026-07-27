@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer:v2
+      - run: composer install --no-progress --prefer-dist --no-interaction
+      - run: vendor/bin/pint --test
+
+  analyse:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer:v2
+      - run: composer install --no-progress --prefer-dist --no-interaction
+      - run: vendor/bin/phpstan analyse --memory-limit=2G
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql
+          tools: composer:v2
+      - run: composer install --no-progress --prefer-dist --no-interaction
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - run: php artisan migrate --force
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
+      - run: vendor/bin/pest --parallel
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
+
+  build:
+    name: Build Assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build

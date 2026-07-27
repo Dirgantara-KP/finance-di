@@ -7,5 +7,23 @@
 *.php diff=php
 
 /.github export-ignore
-CHANGELOG.md export-ignore
-.styleci.yml export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.editorconfig export-ignore
+/.dockerignore export-ignore
+/.npmrc export-ignore
+/.zed export-ignore
+/.vscode export-ignore
+/.idea export-ignore
+/Dockerfile export-ignore
+/docker-compose.yml export-ignore
+/docker-compose.prod.yml export-ignore
+/docker/ export-ignore
+/lefthook.yml export-ignore
+/lefthook-local.yml export-ignore
+/pint.json export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml export-ignore
+/CHANGELOG.md export-ignore
+/README.md export-ignore
+*.log export-ignore
