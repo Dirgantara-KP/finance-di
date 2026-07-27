@@ -9,7 +9,7 @@
     },
     "scripts": {
         "build": "vite build",
-        "commit": "npx cz",
+        "commit": "git add . && npx cz",
         "dev": "vite"
     },
     "config": {

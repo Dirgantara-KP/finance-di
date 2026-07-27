@@ -216,13 +216,55 @@ fix(payment): kalkulasi pajak tidak akurat
 docs(docker): tambah dokumentasi setup
 ```
 
+### Cara Commit
+
+#### Menggunakan Commitizen (Recommended)
+
+```bash
+npm run commit
+```
+
+Perintah ini otomatis menjalankan `git add .` lalu membuka interactive prompt commitizen:
+
+1. **Pilih type** → `feat`, `fix`, `docs`, dll.
+2. **Pilih scope** → `auth`, `payment`, `ui`, dll. (atau custom scope)
+3. **Isi subject** → singkatan perubahan (max 100 karakter)
+4. **Isi body** (opsional) → penjelasan lebih detail
+5. **Isi breaking changes** (opsional) → jika ada perubahan tidak kompatibel
+6. **Isi issues** (opsional) → reference ke issue, e.g. `Closes #123`
+
+Contoh interaksi:
+```
+? Select the type of change:   feat: A new feature
+? Select the scope:            auth
+? Short description:           tambah login dengan Keycloak
+? Longer description:          (optional, press Enter to skip)
+? Breaking changes?            No
+? Issues closed:               (optional, press Enter to skip)
+
+feat(auth): tambah login dengan Keycloak
+```
+
+#### Manual Commit
+
+```bash
+git add .
+git commit -m "feat(auth): tambah login dengan Keycloak"
+```
+
+> Lefthook akan menjalankan git hooks otomatis (pint, phpstan, commitlint). Jika ada error, perbaiki dulu sebelum commit berhasil.
+
 ### Git Hooks
 
 Projek menggunakan [Lefthook](https://github.com/evilmartians/lefthook) untuk git hooks:
 
-- **pre-commit**: `pint` (format) + `phpstan` (static analysis)
-- **commit-msg**: `commitlint` (validasi format commit)
-- **pre-push**: `pint --test` + `pest` (semua test harus pass)
+| Hook | Yang dijalankan | Keterangan |
+|------|-----------------|------------|
+| **pre-commit** | `pint {staged_files}` + `phpstan analyse` | Format & static analysis otomatis |
+| **commit-msg** | `commitlint --edit` | Validasi format Conventional Commits |
+| **pre-push** | `pint --test` + `pest` | Semua test harus pass sebelum push |
+
+> Pint akan auto-fix format pada staged files (`stage_fixed: true`). Jika phpstan menemukan error, commit akan gagal.
 
 ## CI/CD
 
