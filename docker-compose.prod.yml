@@ -1,14 +1,26 @@
 services:
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx-production
     ports:
       - "80:80"
     volumes:
-      - app_data:/var/www/html
-      - ./docker/nginx/production.conf:/etc/nginx/conf.d/default.conf
+      # Read-only, cuma supaya symlink public/storage (dari `artisan storage:link`)
+      # bisa resolve ke file upload asli. Hapus baris ini kalau project tidak
+      # pakai Storage::disk('public').
+      - storage:/var/www/html/storage:ro
     depends_on:
-      - php
+      php:
+        condition: service_healthy
     restart: unless-stopped
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - finance
 
@@ -19,7 +31,6 @@ services:
       target: production
     env_file: .env
     volumes:
-      - app_data:/var/www/html
       - storage:/var/www/html/storage
     depends_on:
       mysql:
@@ -27,6 +38,20 @@ services:
       redis:
         condition: service_started
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - finance
 
@@ -46,19 +71,41 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - finance
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - finance
 
 volumes:
-  app_data:
   mysql_data:
   storage:
+  redis_data:
 
 networks:
   finance:
