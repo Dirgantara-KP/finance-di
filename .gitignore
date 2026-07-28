@@ -47,3 +47,8 @@ lefthook-local.yml
 Thumbs.db
 Homestead.json
 Homestead.yaml
+
+# Text files
+*.md
+!README.md
+*.txt
