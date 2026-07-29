@@ -41,6 +41,21 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
                 FilamentInfoWidget::class,
             ])
+            ->errorNotifications(true)
+            ->registerErrorNotification(
+                title: 'Terjadi Kesalahan',
+                body: 'Terjadi kesalahan saat memuat data. Silakan coba lagi atau hubungi admin.',
+            )
+            ->registerErrorNotification(
+                title: 'Data Tidak Ditemukan',
+                body: 'Data yang dicari tidak ditemukan dalam sistem.',
+                statusCode: 404,
+            )
+            ->registerErrorNotification(
+                title: 'Akses Ditolak',
+                body: 'Anda tidak memiliki akses untuk melakukan ini.',
+                statusCode: 403,
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
