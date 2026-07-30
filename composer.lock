@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0df987083cd020fac53ec99349489ba4",
+    "content-hash": "4c075e91bbd4078d3a5596d15aa0454b",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -3811,6 +3811,78 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.8.0"
             },
             "time": "2026-07-04T14:30:18+00:00"
+        },
+        {
+            "name": "novadaemon/filament-combobox",
+            "version": "v3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/novadaemon/filament-combobox.git",
+                "reference": "4b04327a35c730b860f0fd69f6e18310c74b005e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/novadaemon/filament-combobox/zipball/4b04327a35c730b860f0fd69f6e18310c74b005e",
+                "reference": "4b04327a35c730b860f0fd69f6e18310c74b005e",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "filament/forms": "^5.0",
+                "php": "^8.2",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Novadaemon\\FilamentCombobox\\FilamentComboboxServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Novadaemon\\FilamentCombobox\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jesús García",
+                    "email": "novadaemon@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Side by side combobox multiselect field to use in your FilamentPHP forms",
+            "homepage": "https://github.com/novadaemon/filament-combobox",
+            "keywords": [
+                "Combobox",
+                "Forms",
+                "field",
+                "filament",
+                "filament-combobox",
+                "laravel",
+                "multiple",
+                "novadaemon",
+                "select"
+            ],
+            "support": {
+                "issues": "https://github.com/novadaemon/filament-combobox/issues",
+                "source": "https://github.com/novadaemon/filament-combobox"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/novadaemon",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-20T13:32:03+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -11826,5 +11898,5 @@
         "php": ">=8.4 <9.0"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
