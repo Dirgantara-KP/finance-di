@@ -11,9 +11,19 @@ use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Schemas\Components\Grid;
 
-class PlafondAnggaran extends Page
+
+class PlafondAnggaran extends Page implements HasActions, HasSchemas
 {
+    use InteractsWithActions;
+    use InteractsWithSchemas;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
     protected static ?string $navigationLabel = 'Plafond Anggaran';
@@ -258,60 +268,109 @@ class PlafondAnggaran extends Page
     }
 
     public function insert(): void
-    {
-        $this->validate();
-
-        try {
-            DB::beginTransaction();
-
-            $data = [
-                'c_source' => 'COL',
-                'c_org_id' => 'CO',
-                'c_org' => $this->organisasi,
-                'c_org_contr' => $this->cOrgContr,
-                'i_contr' => $this->kontrak,
-                'c_bdgt_contrstat' => 'A3',
-                'c_bdgt_contrinex' => 'I',
-                'c_bdgt_anggaran' => $this->tahunAnggaran,
-                'c_pgm' => $this->cPgm,
-                'c_pgm_sub' => $this->cPgmSub,
-                'c_pgm_ver' => $this->pon,
-                'c_coa_dr' => $this->sandi,
-                'c_coa_cr' => 'A23',
-                'c_cy' => 'IDR',
-                'i_entry' => '900293',
-                'd_entry' => now(),
-                'c_org_center' => $this->cOrgContr,
-            ];
-
-            for ($i = 1; $i <= 12; $i++) {
-                $data["v_bdgt_addmonth{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
-                $data["v_bdgt_saldomonth{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
-            }
-
-            $data['v_bdgt_addtotal'] = $this->totalPenambahan;
-            $data['v_bdgt_plantotal'] = $this->totalPenambahan;
-            $data['v_bdgt_saldototal'] = $this->totalSaldoAkhir;
-
-            TmbdgtPlafond::create($data);
-
-            DB::commit();
-
-            Notification::make()
-                ->title('Data Plafond Anggaran berhasil disimpan')
-                ->success()
-                ->send();
-
-            $this->resetMonthData();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Notification::make()
-                ->title('Gagal menyimpan data')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
+{
+    if (! $this->canInsert) {
+        return;
     }
+
+    $this->mountAction('insert');
+}
+
+public function insertAction(): Action
+{
+    return Action::make('insert')
+        ->label('Insert')
+        ->modalHeading('Tambah Data Plafond Anggaran')
+        ->modalDescription(fn () => "Tahun {$this->tahunAnggaran} | Org {$this->organisasi} | Sandi {$this->sandi} | PON {$this->pon} | Kontrak {$this->kontrak}")
+        ->modalSubmitActionLabel('Simpan')
+        ->modalCancelActionLabel('Batal')
+        ->modalIcon('heroicon-o-plus-circle')
+        ->schema([
+            Grid::make(4)
+                ->schema([
+                    TextInput::make('bulan_1')->label('Jan')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_2')->label('Feb')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_3')->label('Mar')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_4')->label('Apr')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_5')->label('Mei')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_6')->label('Jun')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_7')->label('Jul')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_8')->label('Agt')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_9')->label('Sep')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_10')->label('Okt')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_11')->label('Nov')->numeric()->default(0)->minValue(0)->required(),
+                    TextInput::make('bulan_12')->label('Des')->numeric()->default(0)->minValue(0)->required(),
+                ]),
+        ])
+        ->action(function (array $data): void {
+            $this->performInsert($data);
+        });
+}
+
+private function performInsert(array $formData): void
+{
+    $this->validate();
+
+    try {
+        DB::beginTransaction();
+
+        $addTotal = 0;
+        $monthly = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $val = (int) ($formData["bulan_{$i}"] ?? 0);
+            $monthly[$i] = $val;
+            $addTotal += $val;
+        }
+
+        $data = [
+            'c_source' => 'COL',
+            'c_org_id' => 'CO',
+            'c_org' => $this->organisasi,
+            'c_org_contr' => $this->cOrgContr,
+            'i_contr' => $this->kontrak,
+            'c_bdgt_contrstat' => 'A3',
+            'c_bdgt_contrinex' => 'I',
+            'c_bdgt_anggaran' => $this->tahunAnggaran,
+            'c_pgm' => $this->cPgm,
+            'c_pgm_sub' => $this->cPgmSub,
+            'c_pgm_ver' => $this->pon,
+            'c_coa_dr' => $this->sandi,
+            'c_coa_cr' => 'A23',
+            'c_cy' => 'IDR',
+            'i_entry' => '900293',
+            'd_entry' => now(),
+            'c_org_center' => $this->cOrgContr,
+        ];
+
+        foreach ($monthly as $i => $val) {
+            $data["v_bdgt_addmonth{$i}"] = $val;
+            $data["v_bdgt_saldomonth{$i}"] = $val;
+        }
+
+        $data['v_bdgt_addtotal'] = $addTotal;
+        $data['v_bdgt_plantotal'] = $addTotal;
+        $data['v_bdgt_saldototal'] = $addTotal;
+
+        TmbdgtPlafond::create($data);
+
+        DB::commit();
+
+        Notification::make()
+            ->title('Data Plafond Anggaran berhasil disimpan')
+            ->success()
+            ->send();
+
+        $this->resetMonthData();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Notification::make()
+            ->title('Gagal menyimpan data')
+            ->body($e->getMessage())
+            ->danger()
+            ->send();
+    }
+}
 
     public function update(): void
     {
@@ -360,6 +419,106 @@ class PlafondAnggaran extends Page
         } else {
             $this->resetMonthData();
         }
+    }
+
+
+    public function getTitle(): string
+    {
+        return 'Plafond Anggaran';
+    }
+
+    public function exportExcel(): void
+    {
+        if (! $this->dataLoaded) {
+            return;
+        }
+    }
+
+    /**
+     * Ringkasan untuk 3 kartu "Ringkasan Setelah Update" (UI-only).
+     * Method ini TIDAK menulis query baru — hanya membaca ulang hasil
+     * dari getTableQuery() yang sudah ada (ditulis oleh backend) untuk
+     * ditampilkan sebagai ringkasan. Tidak mengubah logika bisnis apa pun.
+     *
+     * @return array{saldo_awal: float, perubahan_total: float, saldo_akhir_baru: float}
+     */
+    public function getRingkasan(): array
+    {
+        $default = [
+            'saldo_awal' => 0.0,
+            'perubahan_total' => 0.0,
+            'saldo_akhir_baru' => 0.0,
+        ];
+
+        if (! $this->dataLoaded) {
+            return $default;
+        }
+
+        $rows = $this->getTableQuery()->get()->keyBy('uraian');
+
+        return [
+            'saldo_awal' => (float) ($rows->get('Saldo Awal')->total ?? 0),
+            'perubahan_total' => (float) ($rows->get('Penambahan')->total ?? 0),
+            'saldo_akhir_baru' => (float) ($rows->get('Saldo Akhir')->total ?? 0),
+        ];
+    }
+
+    protected function getTableQuery(): Builder
+    {
+        if (! $this->dataLoaded) {
+            $zeroCols = implode(', ', array_map(fn ($i) => "0 AS month_{$i}", range(0, 11)));
+
+            return TmbdgtPlafond::withoutGlobalScopes()
+                ->from(DB::raw("(
+                    SELECT 1 AS id, 'Saldo Awal' AS uraian, {$zeroCols}, 0 AS total
+                    UNION ALL
+                    SELECT 2 AS id, 'Penambahan' AS uraian, {$zeroCols}, 0 AS total
+                    UNION ALL
+                    SELECT 3 AS id, 'Saldo Akhir' AS uraian, {$zeroCols}, 0 AS total
+                ) as ".(new TmbdgtPlafond)->getTable()));
+        }
+
+        $table = (new TmbdgtPlafond)->getTable();
+
+        $saldoAwalCols = [];
+        $addCols = [];
+        $akhirCols = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $idx = $i - 1;
+            $saldoAwalCols[] = "COALESCE(SUM(V_BDGT_SALDOMONTH{$i}), 0) AS month_{$idx}";
+            $addCols[] = "COALESCE(SUM(V_BDGT_ADDMONTH{$i}), 0) AS month_{$idx}";
+            $akhirCols[] = "COALESCE(SUM(V_BDGT_SALDOMONTH{$i} + V_BDGT_ADDMONTH{$i}), 0) AS month_{$idx}";
+        }
+
+        $saldoAwalSql = implode(', ', $saldoAwalCols);
+        $addSql = implode(', ', $addCols);
+        $akhirSql = implode(', ', $akhirCols);
+
+        $where = 'WHERE deleted_at IS NULL'
+            .' AND C_BDGT_ANGGARAN = ?'
+            .' AND C_ORG LIKE ?'
+            .' AND C_COA_DR LIKE ?'
+            .' AND C_PGM_VER = ?'
+            ." AND C_ORG_CONTR || '-' || I_CONTR = ?";
+
+        $sql1 = "SELECT 1 AS id, 'Saldo Awal' AS uraian, {$saldoAwalSql}, COALESCE(SUM(V_BDGT_SALDOTOTAL), 0) AS total FROM {$table} {$where}";
+        $sql2 = "SELECT 2 AS id, 'Penambahan' AS uraian, {$addSql}, COALESCE(SUM(V_BDGT_ADDTOTAL), 0) AS total FROM {$table} {$where}";
+        $sql3 = "SELECT 3 AS id, 'Saldo Akhir' AS uraian, {$akhirSql}, COALESCE(SUM(V_BDGT_SALDOTOTAL + V_BDGT_ADDTOTAL), 0) AS total FROM {$table} {$where}";
+
+        $fullSql = "({$sql1}) UNION ALL ({$sql2}) UNION ALL ({$sql3})";
+
+        $baseBindings = [
+            $this->tahunAnggaran,
+            $this->organisasi.'%',
+            $this->sandi.'%',
+            $this->pon,
+            $this->kontrak,
+        ];
+
+        return TmbdgtPlafond::withoutGlobalScopes()
+            ->from(DB::raw("({$fullSql}) as {$table}"))
+            ->addBinding(array_merge($baseBindings, $baseBindings, $baseBindings), 'from');
     }
 
     public function close(): void
