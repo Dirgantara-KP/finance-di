@@ -90,7 +90,7 @@ class TmbdgtPlafond extends Model
             'v_bdgt_saldomonth11' => 'integer',
             'v_bdgt_saldomonth12' => 'integer',
             'v_bdgt_saldototal' => 'integer',
-            'd_entry' => 'datetime',
+            'd_entry' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
