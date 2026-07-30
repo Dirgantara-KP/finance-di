@@ -11,29 +11,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('USERS', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('NAME');
+            $table->string('EMAIL')->unique();
+            $table->timestamp('EMAIL_VERIFIED_AT')->nullable();
+            $table->string('PASSWORD');
             $table->rememberToken();
             $table->timestamps();
         });
 
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
+        Schema::create('PASSWORD_RESET_TOKENS', function (Blueprint $table) {
+            $table->string('EMAIL')->primary();
+            $table->string('TOKEN');
+            $table->timestamp('CREATED_AT')->nullable();
         });
 
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
+        Schema::create('SESSIONS', function (Blueprint $table) {
+            $table->string('ID')->primary();
+            $table->foreignId('USER_ID')->nullable()->index();
+            $table->string('IP_ADDRESS', 45)->nullable();
+            $table->text('USER_AGENT')->nullable();
+            $table->longText('PAYLOAD');
+            $table->integer('LAST_ACTIVITY')->index();
         });
     }
 
@@ -42,8 +42,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('USERS');
+        Schema::dropIfExists('PASSWORD_RESET_TOKENS');
+        Schema::dropIfExists('SESSIONS');
     }
 };
