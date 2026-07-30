@@ -26,6 +26,10 @@ class PlafondAnggaranResource extends Resource
 
     protected static ?string $navigationLabel = 'Plafond Anggaran';
 
+    protected static ?string $modelLabel = 'Plafond Anggaran';
+
+    protected static ?string $pluralModelLabel = 'Plafond Anggaran';
+
     public static function form(Schema $schema): Schema
     {
         return PlafondAnggaranForm::configure($schema);

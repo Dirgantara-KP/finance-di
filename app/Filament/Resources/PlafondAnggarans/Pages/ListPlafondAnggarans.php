@@ -216,6 +216,35 @@ class ListPlafondAnggarans extends ListRecords
         }
     }
 
+    /**
+     * Ringkasan untuk 3 kartu "Ringkasan Setelah Update" (UI-only).
+     * Method ini TIDAK menulis query baru — hanya membaca ulang hasil
+     * dari getTableQuery() yang sudah ada (ditulis oleh backend) untuk
+     * ditampilkan sebagai ringkasan. Tidak mengubah logika bisnis apa pun.
+     *
+     * @return array{saldo_awal: float, perubahan_total: float, saldo_akhir_baru: float}
+     */
+    public function getRingkasan(): array
+    {
+        $default = [
+            'saldo_awal' => 0.0,
+            'perubahan_total' => 0.0,
+            'saldo_akhir_baru' => 0.0,
+        ];
+
+        if (! $this->dataLoaded) {
+            return $default;
+        }
+
+        $rows = $this->getTableQuery()->get()->keyBy('uraian');
+
+        return [
+            'saldo_awal' => (float) ($rows->get('Saldo Awal')->total ?? 0),
+            'perubahan_total' => (float) ($rows->get('Penambahan')->total ?? 0),
+            'saldo_akhir_baru' => (float) ($rows->get('Saldo Akhir')->total ?? 0),
+        ];
+    }
+
     protected function getTableQuery(): Builder
     {
         if (! $this->dataLoaded) {
