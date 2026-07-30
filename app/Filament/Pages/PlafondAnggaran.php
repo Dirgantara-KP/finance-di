@@ -202,7 +202,7 @@ class PlafondAnggaran extends Page
             ->where('c_org', 'LIKE', $this->organisasi.'%')
             ->where('c_pgm_ver', $this->pon)
             ->where('c_coa_dr', $this->sandi)
-            ->where(DB::raw("c_org_contr || '-' || i_contr"), $this->cOrgContr.'-'.$this->kontrak)
+            ->whereRaw("CONCAT(c_org_contr, '-', i_contr) = ?", [$this->cOrgContr.'-'.$this->kontrak])
             ->first();
 
         $this->resetMonthData();
@@ -249,11 +249,19 @@ class PlafondAnggaran extends Page
         $this->totalSaldoAkhir = $totalAkhir;
     }
 
+    public function getRingkasan(): array
+    {
+        return [
+            'saldo_akhir_baru' => $this->totalSaldoAkhir,
+            'perubahan_total'  => $this->totalPenambahan,
+            'saldo_awal'       => $this->totalSaldoAwal,
+        ];
+    }
+
     public function updated($property): void
     {
         if (str_starts_with((string) $property, 'addMonth')) {
             $this->calculateAll();
-            $this->skipRender();
         }
     }
 

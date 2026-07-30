@@ -38,8 +38,8 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Sandi <span class="text-red-500">*</span>
                     </label>
-                    <x-filament::input.wrapper :disabled="! $this->organisasi">
-                        <x-filament::input.select wire:model.live="sandi" :disabled="! $this->organisasi">
+                    <x-filament::input.wrapper>
+                        <x-filament::input.select wire:model.live="sandi">
                             <option value="">-- Pilih Sandi --</option>
                             @foreach ($this->sandiOptions as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
@@ -53,8 +53,8 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         PON <span class="text-red-500">*</span>
                     </label>
-                    <x-filament::input.wrapper :disabled="! $this->sandi">
-                        <x-filament::input.select wire:model.live="pon" :disabled="! $this->sandi">
+                    <x-filament::input.wrapper>
+                        <x-filament::input.select wire:model.live="pon">
                             <option value="">-- Pilih PON --</option>
                             @foreach ($this->ponOptions as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
@@ -68,8 +68,8 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         No. Kontrak <span class="text-red-500">*</span>
                     </label>
-                    <x-filament::input.wrapper :disabled="! $this->pon">
-                        <x-filament::input.select wire:model.live="kontrak" :disabled="! $this->pon">
+                    <x-filament::input.wrapper :disabled="! $this->organisasi">
+                        <x-filament::input.select wire:model.live="kontrak" :disabled="! $this->organisasi">
                             <option value="">-- Pilih Kontrak --</option>
                             @foreach ($this->kontrakOptions as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
@@ -150,10 +150,11 @@
                                 if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z'].includes(e.key)) return true;
                                 return e.key >= '0' && e.key <= '9';
                             },
-                            sync(i) {
-                                const val = parseInt(this.addMonth[i]) || 0;
-                                this.addMonth[i] = val;
-                                $wire.set('addMonth.' + i, val);
+                             sync(i) {
+                                 const val = parseInt(this.addMonth[i]) || 0;
+                                 this.addMonth[i] = val;
+                                 this.recalculate();
+                                 $wire.set('addMonth.' + i, val);
                             }
                         }">
                     {{-- Baris 1: Saldo Awal --}}
@@ -224,8 +225,67 @@
         </div>
     </div>
 
+    {{-- Ringkasan Setelah Update --}}
+    @php($ringkasan = $this->getRingkasan())
+    <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-white/10">
+            <h3 class="text-base font-semibold text-gray-950 dark:text-white">Ringkasan Setelah Update</h3>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-3">
+            <div class="flex items-start gap-3 rounded-lg bg-green-50 p-4 dark:bg-green-500/10">
+                <x-filament::icon
+                    icon="heroicon-o-document-check"
+                    class="h-8 w-8 shrink-0 text-green-600 dark:text-green-400"
+                />
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Saldo Akhir Baru</p>
+                    <p class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white">
+                        {{ number_format($ringkasan['saldo_akhir_baru'], 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-3 rounded-lg bg-gray-50 p-4 dark:bg-white/5">
+                <x-filament::icon
+                    icon="heroicon-o-arrow-trending-up"
+                    class="h-8 w-8 shrink-0 text-gray-500 dark:text-gray-400"
+                />
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Perubahan Total</p>
+                    <p class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white">
+                        {{ number_format($ringkasan['perubahan_total'], 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-3 rounded-lg bg-gray-50 p-4 dark:bg-white/5">
+                <x-filament::icon
+                    icon="heroicon-o-banknotes"
+                    class="h-8 w-8 shrink-0 text-gray-500 dark:text-gray-400"
+                />
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Saldo Awal</p>
+                    <p class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white">
+                        {{ number_format($ringkasan['saldo_awal'], 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Tombol Aksi --}}
     <div class="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+        <x-filament::button
+            color="success"
+            icon="heroicon-m-document-arrow-down"
+            :disabled="! $this->dataLoaded"
+            wire:click="exportExcel"
+            class="justify-center"
+        >
+            Export To Excel
+        </x-filament::button>
+
         <x-filament::button
             color="primary"
             icon="heroicon-m-plus"

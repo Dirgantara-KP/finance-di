@@ -62,7 +62,7 @@ class TmbdgtPlafond extends Model
     {
         return [
             'c_bdgt_anggaran' => 'integer',
-            'c_pgm_ver' => 'integer',
+            'c_pgm_ver' => 'string',
             'v_bdgt_addmonth1' => 'integer',
             'v_bdgt_addmonth2' => 'integer',
             'v_bdgt_addmonth3' => 'integer',
