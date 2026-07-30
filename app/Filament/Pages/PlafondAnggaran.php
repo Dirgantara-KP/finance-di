@@ -11,23 +11,20 @@ use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
-use UnitEnum;
 
 class PlafondAnggaran extends Page
 {
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static ?string $navigationLabel = 'Update Plafond Anggaran';
+    protected static ?string $navigationLabel = 'Plafond Anggaran';
 
-    protected static ?string $title = 'Update Plafond Anggaran';
+    protected static ?string $title = 'Plafond Anggaran';
 
     protected static ?string $slug = 'plafond-anggaran';
 
     protected string $view = 'filament.pages.plafond-anggaran';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Anggaran';
-
-    public $tahun;
+    public $tahunAnggaran;
 
     public $organisasi;
 
@@ -84,14 +81,14 @@ class PlafondAnggaran extends Page
             range($currentYear, $currentYear - 5),
             range($currentYear, $currentYear - 5)
         );
-        $this->tahun = $currentYear;
+        $this->tahunAnggaran = $currentYear;
 
         $this->organisasiOptions = Vororg::whereNotNull('c_org_cur')
             ->where('c_org_assetstat', 'OPN')
             ->orderBy('c_org_cur')
             ->get()
             ->mapWithKeys(fn ($item) => [
-                $item->c_org_cur => $item->c_org_cur . ' || ' . $item->n_org_cur,
+                $item->c_org_cur => $item->c_org_cur.' || '.$item->n_org_cur,
             ])
             ->toArray();
 
@@ -99,18 +96,23 @@ class PlafondAnggaran extends Page
             ->where('c_cost_acctsub', '1')
             ->get()
             ->mapWithKeys(fn ($item) => [
-                $item->c_cost => $item->c_cost . ' || ' . $item->e_cost,
+                $item->c_cost => $item->c_cost.' || '.$item->e_cost,
             ])
             ->toArray();
 
         $this->ponOptions = Vpon::where('c_pgm_veract', 'OPN')
             ->get()
             ->mapWithKeys(fn ($item) => [
-                $item->c_pgm_ver => $item->c_pgm_ver . ' || ' . $item->e_pgm,
+                $item->c_pgm_ver => $item->c_pgm_ver.' || '.$item->e_pgm,
             ])
             ->toArray();
 
         $this->resetMonthData();
+    }
+
+    public function getAllFiltersSelectedProperty(): bool
+    {
+        return $this->tahunAnggaran && $this->organisasi && $this->sandi && $this->pon && $this->kontrak;
     }
 
     public function resetMonthData(): void
@@ -146,7 +148,7 @@ class PlafondAnggaran extends Page
         }
     }
 
-    public function updatedTahun(): void
+    public function updatedTahunAnggaran(): void
     {
         $this->resetMonthData();
     }
@@ -169,7 +171,7 @@ class PlafondAnggaran extends Page
     public function rules(): array
     {
         return [
-            'tahun' => 'required',
+            'tahunAnggaran' => 'required',
             'organisasi' => 'required',
             'sandi' => 'required',
             'pon' => 'required',
@@ -177,7 +179,7 @@ class PlafondAnggaran extends Page
         ];
     }
 
-    public function loadData(): void
+    public function muatData(): void
     {
         $this->validate();
 
@@ -196,11 +198,11 @@ class PlafondAnggaran extends Page
             ->first();
         $this->cOrgContr = $kontrakRecord->c_org_contr ?? $this->organisasi;
 
-        $record = TmbdgtPlafond::where('c_bdgt_anggaran', $this->tahun)
-            ->where('c_org', 'LIKE', $this->organisasi . '%')
+        $record = TmbdgtPlafond::where('c_bdgt_anggaran', $this->tahunAnggaran)
+            ->where('c_org', 'LIKE', $this->organisasi.'%')
             ->where('c_pgm_ver', $this->pon)
             ->where('c_coa_dr', $this->sandi)
-            ->where(DB::raw("c_org_contr || '-' || i_contr"), $this->cOrgContr . '-' . $this->kontrak)
+            ->where(DB::raw("c_org_contr || '-' || i_contr"), $this->cOrgContr.'-'.$this->kontrak)
             ->first();
 
         $this->resetMonthData();
@@ -219,12 +221,12 @@ class PlafondAnggaran extends Page
             $this->calculateAll();
 
             $currentYear = (int) date('Y');
-            if ((int) $this->tahun === $currentYear && $record->c_bdgt_contrstat === 'A3') {
+            if ((int) $this->tahunAnggaran === $currentYear && $record->c_bdgt_contrstat === 'A3') {
                 $this->canUpdate = true;
             }
         } else {
             $currentYear = (int) date('Y');
-            if ((int) $this->tahun === $currentYear) {
+            if ((int) $this->tahunAnggaran === $currentYear) {
                 $this->canInsert = true;
             }
         }
@@ -236,7 +238,6 @@ class PlafondAnggaran extends Page
         $totalAdd = 0;
         $totalAkhir = 0;
         for ($i = 0; $i < 12; $i++) {
-            $this->saldoAwal[$i] = (int) ($this->saldoAwal[$i] ?? 0);
             $this->addMonth[$i] = (int) ($this->addMonth[$i] ?? 0);
             $this->saldoAkhir[$i] = $this->saldoAwal[$i] + $this->addMonth[$i];
             $totalAwal += $this->saldoAwal[$i];
@@ -252,6 +253,7 @@ class PlafondAnggaran extends Page
     {
         if (str_starts_with((string) $property, 'addMonth')) {
             $this->calculateAll();
+            $this->skipRender();
         }
     }
 
@@ -270,7 +272,7 @@ class PlafondAnggaran extends Page
                 'i_contr' => $this->kontrak,
                 'c_bdgt_contrstat' => 'A3',
                 'c_bdgt_contrinex' => 'I',
-                'c_bdgt_anggaran' => $this->tahun,
+                'c_bdgt_anggaran' => $this->tahunAnggaran,
                 'c_pgm' => $this->cPgm,
                 'c_pgm_sub' => $this->cPgmSub,
                 'c_pgm_ver' => $this->pon,
@@ -340,7 +342,7 @@ class PlafondAnggaran extends Page
                 ->success()
                 ->send();
 
-            $this->loadData();
+            $this->muatData();
         } catch (\Exception $e) {
             DB::rollBack();
             Notification::make()
@@ -354,7 +356,7 @@ class PlafondAnggaran extends Page
     public function cancel(): void
     {
         if ($this->existingId) {
-            $this->loadData();
+            $this->muatData();
         } else {
             $this->resetMonthData();
         }

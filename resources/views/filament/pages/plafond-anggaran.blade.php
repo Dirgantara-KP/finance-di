@@ -1,189 +1,267 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
-        {{-- Filter Bar - Flex Wrap --}}
-        <div class="flex flex-wrap gap-3 items-end">
-            <div class="w-full sm:w-auto sm:min-w-[150px]">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tahun Anggaran
-                </label>
-                <select
-                    wire:model.live="tahun"
-                    class="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                >
-                    @foreach ($tahunOptions as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+    {{-- Panel Filter Plafond Anggaran --}}
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
+        <div class="p-6">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {{-- 1. Tahun Anggaran --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Tahun Anggaran <span class="text-red-500">*</span>
+                    </label>
+                    <x-filament::input.wrapper>
+                        <x-filament::input.select wire:model.live="tahunAnggaran">
+                            <option value="">-- Pilih Tahun --</option>
+                            @foreach ($this->tahunOptions as $value)
+                                <option value="{{ $value }}">{{ $value }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
+
+                {{-- 2. Organisasi --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Organisasi <span class="text-red-500">*</span>
+                    </label>
+                    <x-filament::input.wrapper :disabled="! $this->tahunAnggaran">
+                        <x-filament::input.select wire:model.live="organisasi" :disabled="! $this->tahunAnggaran">
+                            <option value="">-- Pilih Organisasi --</option>
+                            @foreach ($this->organisasiOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
+
+                {{-- 3. Sandi --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Sandi <span class="text-red-500">*</span>
+                    </label>
+                    <x-filament::input.wrapper :disabled="! $this->organisasi">
+                        <x-filament::input.select wire:model.live="sandi" :disabled="! $this->organisasi">
+                            <option value="">-- Pilih Sandi --</option>
+                            @foreach ($this->sandiOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
+
+                {{-- 4. PON --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        PON <span class="text-red-500">*</span>
+                    </label>
+                    <x-filament::input.wrapper :disabled="! $this->sandi">
+                        <x-filament::input.select wire:model.live="pon" :disabled="! $this->sandi">
+                            <option value="">-- Pilih PON --</option>
+                            @foreach ($this->ponOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
+
+                {{-- 5. No. Kontrak --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        No. Kontrak <span class="text-red-500">*</span>
+                    </label>
+                    <x-filament::input.wrapper :disabled="! $this->pon">
+                        <x-filament::input.select wire:model.live="kontrak" :disabled="! $this->pon">
+                            <option value="">-- Pilih Kontrak --</option>
+                            @foreach ($this->kontrakOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
             </div>
-            <div class="w-full sm:w-auto sm:min-w-[250px]">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Organisasi
-                </label>
-                <select
-                    wire:model.live="organisasi"
-                    class="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+
+            <div class="mt-4 flex justify-end">
+                <x-filament::button
+                    wire:click="muatData"
+                    icon="heroicon-m-magnifying-glass"
+                    :disabled="! $this->allFiltersSelected"
                 >
-                    <option value="">-- Pilih Organisasi --</option>
-                    @foreach ($organisasiOptions as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="w-full sm:w-auto sm:min-w-[250px]">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Sandi
-                </label>
-                <select
-                    wire:model.live="sandi"
-                    class="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                >
-                    <option value="">-- Pilih Sandi --</option>
-                    @foreach ($sandiOptions as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="w-full sm:w-auto sm:min-w-[250px]">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    PON
-                </label>
-                <select
-                    wire:model.live="pon"
-                    class="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                >
-                    <option value="">-- Pilih PON --</option>
-                    @foreach ($ponOptions as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="w-full sm:w-auto sm:min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    No. Kontrak
-                </label>
-                <select
-                    wire:model.live="kontrak"
-                    class="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                >
-                    <option value="">-- Pilih Kontrak --</option>
-                    @foreach ($kontrakOptions as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="w-full sm:w-auto flex gap-2 pt-5">
-                <x-filament::button wire:click="loadData" color="primary">
-                    Load
+                    Muat Data
                 </x-filament::button>
             </div>
         </div>
+    </div>
 
-        {{-- Table --}}
-        @if ($dataLoaded)
-            <div class="overflow-x-auto rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10">
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 dark:bg-gray-800">
-                            <th class="px-3 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 w-1">No</th>
-                            <th class="px-3 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 min-w-[120px]">Uraian</th>
-                            @for ($i = 1; $i <= 12; $i++)
-                                <th class="px-2 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 min-w-[100px]">
-                                    {{ \Carbon\Carbon::create()->month($i)->isoFormat('MMM') }}
-                                </th>
-                            @endfor
-                            <th class="px-3 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 min-w-[110px]">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- Row 1: Saldo Awal --}}
-                        <tr class="bg-white dark:bg-gray-900">
-                            <td class="px-3 py-3 text-sm text-gray-500 border-b border-gray-100 dark:border-gray-800">1</td>
-                            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800">Saldo Awal</td>
-                            @for ($i = 0; $i < 12; $i++)
-                                <td class="px-2 py-3 text-sm text-right text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-800">
-                                    {{ number_format((int) ($saldoAwal[$i] ?? 0), 0, ',', '.') }}
-                                </td>
-                            @endfor
-                            <td class="px-3 py-3 text-sm text-right font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800">
-                                {{ number_format($totalSaldoAwal, 0, ',', '.') }}
-                            </td>
-                        </tr>
+    {{-- Tabel Rincian Plafond Anggaran --}}
+    <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-300">
+                <thead class="bg-gray-50 dark:bg-white/5">
+                    <tr class="border-b border-gray-200 dark:border-white/10">
+                        <th class="w-12 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">No</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-950 dark:text-white">Uraian</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Jan</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Feb</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Mar</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Apr</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Mei</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Jun</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Jul</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Agt</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Sep</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Okt</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Nov</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px]">Des</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white">Total</th>
+                    </tr>
+                </thead>
+                <tbody wire:key="plafond-tbody-{{ $dataLoaded ? 'loaded' : 'empty' }}"
+                       x-data="{
+                           addMonth: {{ json_encode(array_map('intval', $addMonth)) }},
+                           saldoAwal: {{ json_encode(array_map('intval', $saldoAwal)) }},
+                           saldoAkhir: {{ json_encode(array_map('intval', $saldoAkhir)) }},
+                           totals: {
+                               awal: {{ $totalSaldoAwal }},
+                               add: {{ $totalPenambahan }},
+                               akhir: {{ $totalSaldoAkhir }}
+                           },
+                           init() {
+                               this.recalculate();
+                           },
+                           recalculate() {
+                               let tAwal = 0, tAdd = 0, tAkhir = 0;
+                               for (let i = 0; i < 12; i++) {
+                                   const addVal = parseInt(this.addMonth[i]) || 0;
+                                   this.saldoAkhir[i] = this.saldoAwal[i] + addVal;
+                                   tAwal += this.saldoAwal[i];
+                                   tAdd += addVal;
+                                   tAkhir += this.saldoAkhir[i];
+                               }
+                               this.totals.awal = tAwal;
+                               this.totals.add = tAdd;
+                               this.totals.akhir = tAkhir;
+                           },
+                           format(n) {
+                               return Number(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                           },
+                           isNumKey(e) {
+                                const allowed = ['Backspace','Delete','Tab','Enter','Escape',
+                                                 'ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                                if (allowed.includes(e.key)) return true;
+                                if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z'].includes(e.key)) return true;
+                                return e.key >= '0' && e.key <= '9';
+                            },
+                            sync(i) {
+                                const val = parseInt(this.addMonth[i]) || 0;
+                                this.addMonth[i] = val;
+                                $wire.set('addMonth.' + i, val);
+                            }
+                        }">
+                    {{-- Baris 1: Saldo Awal --}}
+                    <tr class="even:bg-gray-50 dark:even:bg-white/5">
+                        <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">1</td>
+                        <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Saldo Awal</td>
+                        @foreach ($saldoAwal as $val)
+                            <td class="px-3 py-3 text-right text-sm tabular-nums text-gray-950 dark:text-white min-w-[100px]">{{ number_format($val, 0, ',', '.') }}</td>
+                        @endforeach
+                        <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white">{{ number_format($totalSaldoAwal, 0, ',', '.') }}</td>
+                    </tr>
 
-                        {{-- Row 2: Penambahan (Editable) --}}
-                        <tr class="bg-white dark:bg-gray-900">
-                            <td class="px-3 py-3 text-sm text-gray-500 border-b border-gray-100 dark:border-gray-800">2</td>
-                            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800">
-                                Penambahan
-                                @if ($canInsert)
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-400 ml-1">Baru</span>
-                                @endif
-                            </td>
-                            @for ($i = 0; $i < 12; $i++)
-                                <td class="px-2 py-2 text-sm border-b border-gray-100 dark:border-gray-800">
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        wire:model.live="addMonth.{{ $i }}"
-                                        class="w-full text-right text-sm text-gray-900 dark:text-gray-100 bg-transparent border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-primary-500 focus:ring-0 px-1 py-0.5 transition-colors"
-                                    />
-                                </td>
-                            @endfor
-                            <td class="px-3 py-3 text-sm text-right font-semibold text-primary-600 dark:text-primary-400 border-b border-gray-100 dark:border-gray-800">
-                                {{ number_format($totalPenambahan, 0, ',', '.') }}
-                            </td>
-                        </tr>
+                    {{-- Baris 2: Penambahan --}}
+                    <tr class="even:bg-gray-50 dark:even:bg-white/5">
+                        <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">2</td>
+                        <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Penambahan</td>
+                        @for ($i = 0; $i < 12; $i++)
+                            <td class="px-3 py-3 text-right text-sm tabular-nums text-gray-950 dark:text-white min-w-[100px]"
+                                x-data="{ editing: false, saved: 0 }">
 
-                        {{-- Row 3: Saldo Akhir --}}
-                        <tr class="bg-gray-50/50 dark:bg-gray-800/50">
-                            <td class="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">3</td>
-                            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">Saldo Akhir</td>
-                            @for ($i = 0; $i < 12; $i++)
-                                <td class="px-2 py-3 text-sm text-right font-medium text-gray-900 dark:text-gray-100">
-                                    {{ number_format((int) ($saldoAkhir[$i] ?? 0), 0, ',', '.') }}
-                                </td>
-                            @endfor
-                            <td class="px-3 py-3 text-sm text-right font-bold text-gray-900 dark:text-gray-100">
-                                {{ number_format($totalSaldoAkhir, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                                {{-- Display mode --}}
+                                <span x-show="!editing"
+                                      x-text="format(addMonth[{{ $i }}])"
+                                      @dblclick="saved = addMonth[{{ $i }}]; editing = true"
+                                      class="block cursor-default select-none leading-5">
+                                </span>
 
-            {{-- Action Buttons --}}
-            <div class="flex flex-wrap gap-2">
-                <x-filament::button
-                    wire:click="insert"
-                    :disabled="!$canInsert"
-                    color="success"
-                >
-                    Insert
-                </x-filament::button>
-                <x-filament::button
-                    wire:click="update"
-                    :disabled="!$canUpdate"
-                    color="warning"
-                >
-                    Update
-                </x-filament::button>
-                <x-filament::button
-                    wire:click="cancel"
-                    color="gray"
-                >
-                    Cancel
-                </x-filament::button>
-                <x-filament::button
-                    wire:click="close"
-                    color="gray"
-                >
-                    Close
-                </x-filament::button>
-            </div>
-        @else
-            <div class="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
-                <x-filament::icon alias="heroicon-o-funnel" class="w-12 h-12 mb-3" />
-                <p class="text-sm">Pilih filter dan klik <strong>Load</strong> untuk menampilkan data</p>
-            </div>
-        @endif
+                                {{-- Edit mode --}}
+                                <template x-if="editing">
+                                    <span contenteditable="true"
+                                          x-init="$el.innerText = saved;
+                                                  $nextTick(() => {
+                                                      $el.focus();
+                                                      const s = window.getSelection();
+                                                      const r = document.createRange();
+                                                      r.selectNodeContents($el);
+                                                      s.removeAllRanges(); s.addRange(r);
+                                                  })"
+                                          @blur="editing = false;
+                                                 const raw = $el.innerText.replace(/\./g, '').trim();
+                                                 const val = parseInt(raw) || 0;
+                                                 addMonth[{{ $i }}] = val;
+                                                 recalculate(); sync({{ $i }})"
+                                          @keydown="if (!isNumKey($event)) $event.preventDefault()"
+                                          @paste.prevent="document.execCommand('insertText', false, $event.clipboardData.getData('text').replace(/\D/g, ''))"
+                                          @keydown.enter.prevent="$el.blur()"
+                                          @keydown.escape.prevent="addMonth[{{ $i }}] = saved; recalculate(); editing = false"
+                                          class="block outline-none cursor-text leading-5">
+                                    </span>
+                                </template>
+
+                            </td>
+                        @endfor
+                        <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white leading-5" x-text="format(totals.add)">{{ number_format($totalPenambahan, 0, ',', '.') }}</td>
+                    </tr>
+
+                    {{-- Baris 3: Saldo Akhir --}}
+                    <tr class="even:bg-gray-50 dark:even:bg-white/5">
+                        <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">3</td>
+                        <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Saldo Akhir</td>
+                        @for ($i = 0; $i < 12; $i++)
+                            <td class="px-3 py-3 text-right text-sm tabular-nums text-gray-950 dark:text-white min-w-[100px]" x-text="format(saldoAkhir[{{ $i }}])">{{ number_format($saldoAkhir[$i], 0, ',', '.') }}</td>
+                        @endfor
+                        <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white" x-text="format(totals.akhir)">{{ number_format($totalSaldoAkhir, 0, ',', '.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- Tombol Aksi --}}
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+        <x-filament::button
+            color="primary"
+            icon="heroicon-m-plus"
+            :disabled="! $this->canInsert"
+            wire:click="insert"
+            class="justify-center"
+        >
+            Insert
+        </x-filament::button>
+
+        <x-filament::button
+            color="warning"
+            icon="heroicon-m-pencil-square"
+            :disabled="! $this->canUpdate"
+            wire:click="update"
+            class="justify-center"
+        >
+            Update
+        </x-filament::button>
+
+        <x-filament::button
+            color="gray"
+            icon="heroicon-m-arrow-uturn-left"
+            wire:click="cancel"
+            class="justify-center"
+        >
+            Cancel
+        </x-filament::button>
+
+        <x-filament::button
+            color="gray"
+            icon="heroicon-m-x-mark"
+            wire:click="close"
+            class="justify-center"
+        >
+            Close
+        </x-filament::button>
     </div>
 </x-filament-panels::page>
