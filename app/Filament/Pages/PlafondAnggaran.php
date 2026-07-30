@@ -14,10 +14,8 @@ use Illuminate\Support\Facades\DB;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
-use Filament\Schemas\Components\Grid;
 
 
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
@@ -65,6 +63,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public $saldoAwal = [];
 
     public $addMonth = [];
+    public array $insertMonthly = [];
 
     public $saldoAkhir = [];
 
@@ -130,6 +129,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->saldoAwal = array_fill(0, 12, 0);
         $this->addMonth = array_fill(0, 12, 0);
         $this->saldoAkhir = array_fill(0, 12, 0);
+        $this->insertMonthly = array_fill(0, 12, 0);
         $this->totalSaldoAwal = 0;
         $this->totalPenambahan = 0;
         $this->totalSaldoAkhir = 0;
@@ -281,33 +281,16 @@ public function insertAction(): Action
     return Action::make('insert')
         ->label('Insert')
         ->modalHeading('Tambah Data Plafond Anggaran')
-        ->modalDescription(fn () => "Tahun {$this->tahunAnggaran} | Org {$this->organisasi} | Sandi {$this->sandi} | PON {$this->pon} | Kontrak {$this->kontrak}")
+        ->modalContent(fn () => view('filament.modals.plafond-anggaran.insert-plafond-anggaran'))
         ->modalSubmitActionLabel('Simpan')
         ->modalCancelActionLabel('Batal')
         ->modalIcon('heroicon-o-plus-circle')
-        ->schema([
-            Grid::make(4)
-                ->schema([
-                    TextInput::make('bulan_1')->label('Jan')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_2')->label('Feb')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_3')->label('Mar')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_4')->label('Apr')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_5')->label('Mei')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_6')->label('Jun')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_7')->label('Jul')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_8')->label('Agt')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_9')->label('Sep')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_10')->label('Okt')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_11')->label('Nov')->numeric()->default(0)->minValue(0)->required(),
-                    TextInput::make('bulan_12')->label('Des')->numeric()->default(0)->minValue(0)->required(),
-                ]),
-        ])
-        ->action(function (array $data): void {
-            $this->performInsert($data);
+        ->action(function (): void {
+            $this->performInsert();
         });
 }
 
-private function performInsert(array $formData): void
+private function performInsert(): void
 {
     $this->validate();
 
@@ -318,7 +301,7 @@ private function performInsert(array $formData): void
         $monthly = [];
 
         for ($i = 1; $i <= 12; $i++) {
-            $val = (int) ($formData["bulan_{$i}"] ?? 0);
+            $val = (int) ($this->insertMonthly[$i - 1] ?? 0);
             $monthly[$i] = $val;
             $addTotal += $val;
         }
@@ -371,7 +354,6 @@ private function performInsert(array $formData): void
             ->send();
     }
 }
-
     public function update(): void
     {
         $this->validate();
@@ -494,6 +476,8 @@ private function performInsert(array $formData): void
         $saldoAwalSql = implode(', ', $saldoAwalCols);
         $addSql = implode(', ', $addCols);
         $akhirSql = implode(', ', $akhirCols);
+
+
 
         $where = 'WHERE deleted_at IS NULL'
             .' AND C_BDGT_ANGGARAN = ?'
