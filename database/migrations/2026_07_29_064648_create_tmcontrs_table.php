@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('TMCONTR', function (Blueprint $table) {
+        Schema::create('tmcontr', function (Blueprint $table) {
             $table->id();
 
-            $table->integer('I_ID_CONTR');
-            $table->char('C_ORG_CONTR', 6);
-            $table->string('I_CONTR');
-            $table->string('I_CONTR_REF');
-            $table->string('N_CONTR_PROJ');
+            $table->integer('i_id_contr');
+            $table->char('c_org_contr', 6);
+            $table->string('i_contr');
+            $table->string('i_contr_ref');
+            $table->string('n_contr_proj');
 
             $table->timestamps();
             $table->softDeletes();
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('TMCONTR');
+        Schema::dropIfExists('tmcontr');
     }
 };

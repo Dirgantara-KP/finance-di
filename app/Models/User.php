@@ -16,18 +16,18 @@ use Illuminate\Notifications\Notifiable;
  * socialite provider), authentication will be handled by Keycloak — not by
  * Laravel's built-in email/password session auth.
  *
- * Impact on the USERS table:
- * - PASSWORD column can be removed or made nullable (Keycloak handles
+ * Impact on the users table:
+ * - password column can be removed or made nullable (Keycloak handles
  *   password verification)
- * - REMEMBER_TOKEN may become irrelevant (sessions managed by Keycloak JWT)
+ * - remember_token may become irrelevant (sessions managed by Keycloak JWT)
  * - Additional columns may be needed:
- *     KEYCLOAK_ID   – unique user ID from Keycloak's `sub` claim (string)
- *     USERNAME      – Keycloak username (string, nullable)
- *     NIK           – employee ID number (string, nullable)
- *     JABATAN       – position/title (string, nullable)
- *     PHONE         – phone number (string, nullable)
- *     C_ORG_CUR     – cost centre / unit code (char(6), nullable)
- *     IS_ACTIVE     – user active status (boolean, default true)
+ *     keycloak_id   – unique user ID from Keycloak's `sub` claim (string)
+ *     username      – Keycloak username (string, nullable)
+ *     nik           – employee ID number (string, nullable)
+ *     jabatan       – position/title (string, nullable)
+ *     phone         – phone number (string, nullable)
+ *     c_org_cur     – cost centre / unit code (char(6), nullable)
+ *     is_active     – user active status (boolean, default true)
  *
  * Auth guard changes (config/auth.php):
  *     When Keycloak is live, replace the 'web' guard's driver and provider
@@ -43,48 +43,31 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    protected $table = 'USERS';
+    protected $table = 'users';
 
     protected $fillable = [
-        'NAME',
-        'EMAIL',
-        'PASSWORD',
-        'EMAIL_VERIFIED_AT',
+        'name',
+        'email',
+        'password',
+        'email_verified_at',
         'remember_token',
     ];
 
     protected $hidden = [
-        'PASSWORD',
+        'password',
         'remember_token',
     ];
 
     public function getAuthPassword(): string
     {
-        return $this->PASSWORD;
-    }
-
-    /*
-     * Override fill() to normalise attribute keys to uppercase.
-     * This ensures external code (e.g. Filament's make:filament-user command)
-     * that passes lowercase keys like 'name', 'email', 'password' still
-     * matches the USERS table's uppercase column names.
-     */
-    public function fill(array $attributes)
-    {
-        $normalised = [];
-
-        foreach ($attributes as $key => $value) {
-            $normalised[strtoupper($key)] = $value;
-        }
-
-        return parent::fill($normalised);
+        return $this->password;
     }
 
     protected function casts(): array
     {
         return [
-            'EMAIL_VERIFIED_AT' => 'datetime',
-            'PASSWORD' => 'hashed',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
         ];
     }
 }

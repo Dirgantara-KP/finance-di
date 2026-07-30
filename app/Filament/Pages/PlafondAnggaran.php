@@ -86,27 +86,27 @@ class PlafondAnggaran extends Page
         );
         $this->tahun = $currentYear;
 
-        $this->organisasiOptions = Vororg::whereNotNull('C_ORG_CUR')
-            ->where('C_ORG_ASSETSTAT', 'OPN')
-            ->orderBy('C_ORG_CUR')
+        $this->organisasiOptions = Vororg::whereNotNull('c_org_cur')
+            ->where('c_org_assetstat', 'OPN')
+            ->orderBy('c_org_cur')
             ->get()
             ->mapWithKeys(fn ($item) => [
-                $item->C_ORG_CUR => $item->C_ORG_CUR . ' || ' . $item->N_ORG_CUR,
+                $item->c_org_cur => $item->c_org_cur . ' || ' . $item->n_org_cur,
             ])
             ->toArray();
 
-        $this->sandiOptions = Trchartacct::where('C_COST_BSIS', 'CC')
-            ->where('C_COST_ACCTSUB', '1')
+        $this->sandiOptions = Trchartacct::where('c_cost_bsis', 'CC')
+            ->where('c_cost_acctsub', '1')
             ->get()
             ->mapWithKeys(fn ($item) => [
-                $item->C_COST => $item->C_COST . ' || ' . $item->E_COST,
+                $item->c_cost => $item->c_cost . ' || ' . $item->e_cost,
             ])
             ->toArray();
 
-        $this->ponOptions = Vpon::where('C_PGM_VERACT', 'OPN')
+        $this->ponOptions = Vpon::where('c_pgm_veract', 'OPN')
             ->get()
             ->mapWithKeys(fn ($item) => [
-                $item->C_PGM_VER => $item->C_PGM_VER . ' || ' . $item->E_PGM,
+                $item->c_pgm_ver => $item->c_pgm_ver . ' || ' . $item->e_pgm,
             ])
             ->toArray();
 
@@ -140,8 +140,8 @@ class PlafondAnggaran extends Page
     {
         $this->kontrakOptions = [];
         if ($this->organisasi) {
-            $this->kontrakOptions = Tmcontr::where('C_ORG_CONTR', $this->organisasi)
-                ->pluck('I_CONTR', 'I_CONTR')
+            $this->kontrakOptions = Tmcontr::where('c_org_contr', $this->organisasi)
+                ->pluck('i_contr', 'i_contr')
                 ->toArray();
         }
     }
@@ -181,26 +181,26 @@ class PlafondAnggaran extends Page
     {
         $this->validate();
 
-        $ponRecord = Vpon::where('C_PGM_VER', $this->pon)->first();
+        $ponRecord = Vpon::where('c_pgm_ver', $this->pon)->first();
         if ($ponRecord) {
-            $this->cPgm = $ponRecord->C_PGM;
-            $this->cPgmSub = $ponRecord->C_PGM_SUB;
-            $this->namaProgram = $ponRecord->E_PGM;
+            $this->cPgm = $ponRecord->c_pgm;
+            $this->cPgmSub = $ponRecord->c_pgm_sub;
+            $this->namaProgram = $ponRecord->e_pgm;
         }
 
-        $sandiRecord = Trchartacct::where('C_COST', $this->sandi)->first();
-        $this->namaSandi = $sandiRecord->E_COST ?? '';
+        $sandiRecord = Trchartacct::where('c_cost', $this->sandi)->first();
+        $this->namaSandi = $sandiRecord->e_cost ?? '';
 
-        $kontrakRecord = Tmcontr::where('I_CONTR', $this->kontrak)
-            ->where('C_ORG_CONTR', $this->organisasi)
+        $kontrakRecord = Tmcontr::where('i_contr', $this->kontrak)
+            ->where('c_org_contr', $this->organisasi)
             ->first();
-        $this->cOrgContr = $kontrakRecord->C_ORG_CONTR ?? $this->organisasi;
+        $this->cOrgContr = $kontrakRecord->c_org_contr ?? $this->organisasi;
 
-        $record = TmbdgtPlafond::where('C_BDGT_ANGGARAN', $this->tahun)
-            ->where('C_ORG', 'LIKE', $this->organisasi . '%')
-            ->where('C_PGM_VER', $this->pon)
-            ->where('C_COA_DR', $this->sandi)
-            ->where(DB::raw("C_ORG_CONTR || '-' || I_CONTR"), $this->cOrgContr . '-' . $this->kontrak)
+        $record = TmbdgtPlafond::where('c_bdgt_anggaran', $this->tahun)
+            ->where('c_org', 'LIKE', $this->organisasi . '%')
+            ->where('c_pgm_ver', $this->pon)
+            ->where('c_coa_dr', $this->sandi)
+            ->where(DB::raw("c_org_contr || '-' || i_contr"), $this->cOrgContr . '-' . $this->kontrak)
             ->first();
 
         $this->resetMonthData();
@@ -210,8 +210,8 @@ class PlafondAnggaran extends Page
             $this->existingId = $record->id;
 
             for ($i = 1; $i <= 12; $i++) {
-                $saldoField = "V_BDGT_SALDOMONTH{$i}";
-                $addField = "V_BDGT_ADDMONTH{$i}";
+                $saldoField = "v_bdgt_saldomonth{$i}";
+                $addField = "v_bdgt_addmonth{$i}";
                 $this->saldoAwal[$i - 1] = (int) ($record->$saldoField ?? 0);
                 $this->addMonth[$i - 1] = (int) ($record->$addField ?? 0);
             }
@@ -219,7 +219,7 @@ class PlafondAnggaran extends Page
             $this->calculateAll();
 
             $currentYear = (int) date('Y');
-            if ((int) $this->tahun === $currentYear && $record->C_BDGT_CONTRSTAT === 'A3') {
+            if ((int) $this->tahun === $currentYear && $record->c_bdgt_contrstat === 'A3') {
                 $this->canUpdate = true;
             }
         } else {
@@ -263,33 +263,33 @@ class PlafondAnggaran extends Page
             DB::beginTransaction();
 
             $data = [
-                'C_SOURCE' => 'COL',
-                'C_ORG_ID' => 'CO',
-                'C_ORG' => $this->organisasi,
-                'C_ORG_CONTR' => $this->cOrgContr,
-                'I_CONTR' => $this->kontrak,
-                'C_BDGT_CONTRSTAT' => 'A3',
-                'C_BDGT_CONTRINEX' => 'I',
-                'C_BDGT_ANGGARAN' => $this->tahun,
-                'C_PGM' => $this->cPgm,
-                'C_PGM_SUB' => $this->cPgmSub,
-                'C_PGM_VER' => $this->pon,
-                'C_COA_DR' => $this->sandi,
-                'C_COA_CR' => 'A23',
-                'C_CY' => 'IDR',
-                'I_ENTRY' => '900293',
-                'D_ENTRY' => now(),
-                'C_ORG_CENTER' => $this->cOrgContr,
+                'c_source' => 'COL',
+                'c_org_id' => 'CO',
+                'c_org' => $this->organisasi,
+                'c_org_contr' => $this->cOrgContr,
+                'i_contr' => $this->kontrak,
+                'c_bdgt_contrstat' => 'A3',
+                'c_bdgt_contrinex' => 'I',
+                'c_bdgt_anggaran' => $this->tahun,
+                'c_pgm' => $this->cPgm,
+                'c_pgm_sub' => $this->cPgmSub,
+                'c_pgm_ver' => $this->pon,
+                'c_coa_dr' => $this->sandi,
+                'c_coa_cr' => 'A23',
+                'c_cy' => 'IDR',
+                'i_entry' => '900293',
+                'd_entry' => now(),
+                'c_org_center' => $this->cOrgContr,
             ];
 
             for ($i = 1; $i <= 12; $i++) {
-                $data["V_BDGT_ADDMONTH{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
-                $data["V_BDGT_SALDOMONTH{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
+                $data["v_bdgt_addmonth{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
+                $data["v_bdgt_saldomonth{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
             }
 
-            $data['V_BDGT_ADDTOTAL'] = $this->totalPenambahan;
-            $data['V_BDGT_PLANTOTAL'] = $this->totalPenambahan;
-            $data['V_BDGT_SALDOTOTAL'] = $this->totalSaldoAkhir;
+            $data['v_bdgt_addtotal'] = $this->totalPenambahan;
+            $data['v_bdgt_plantotal'] = $this->totalPenambahan;
+            $data['v_bdgt_saldototal'] = $this->totalSaldoAkhir;
 
             TmbdgtPlafond::create($data);
 
@@ -325,11 +325,11 @@ class PlafondAnggaran extends Page
 
             $updateData = [];
             for ($i = 1; $i <= 12; $i++) {
-                $updateData["V_BDGT_ADDMONTH{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
-                $updateData["V_BDGT_SALDOMONTH{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
+                $updateData["v_bdgt_addmonth{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
+                $updateData["v_bdgt_saldomonth{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
             }
-            $updateData['V_BDGT_ADDTOTAL'] = $this->totalPenambahan;
-            $updateData['V_BDGT_SALDOTOTAL'] = $this->totalSaldoAkhir;
+            $updateData['v_bdgt_addtotal'] = $this->totalPenambahan;
+            $updateData['v_bdgt_saldototal'] = $this->totalSaldoAkhir;
 
             $record->update($updateData);
 

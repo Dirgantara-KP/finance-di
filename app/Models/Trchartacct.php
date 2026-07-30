@@ -9,22 +9,25 @@ class Trchartacct extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'TRCHARTACCT';
+    protected $table = 'trchartacct';
 
     protected $fillable = [
-        'C_COST_BSIS',
-        'C_COST_ACCTGRP',
-        'C_COST_ACCTSUB',
-        'C_COST_ACCTSUBGRP',
-        'C_COST',
-        'E_COST',
+        'c_cost_bsis',
+        'c_cost_acctgrp',
+        'c_cost_acctsub',
+        'c_cost_acctsubgrp',
+        'c_cost',
+        'e_cost',
     ];
 
-    protected $casts = [
-        'C_COST_ACCTGRP' => 'integer',
-        'C_COST_ACCTSUBGRP' => 'integer',
-        'CREATED_AT' => 'datetime',
-        'UPDATED_AT' => 'datetime',
-        'DELETED_AT' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'c_cost_acctgrp' => 'integer',
+            'c_cost_acctsubgrp' => 'integer',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
 }

@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('TRCHARTACCT', function (Blueprint $table) {
+        Schema::create('trchartacct', function (Blueprint $table) {
             $table->id();
 
-            $table->char('C_COST_BSIS', 2);
-            $table->integer('C_COST_ACCTGRP');
-            $table->char('C_COST_ACCTSUB', 3)->nullable();
-            $table->integer('C_COST_ACCTSUBGRP');
-            $table->char('C_COST', 3);
-            $table->string('E_COST');
+            $table->char('c_cost_bsis', 2);
+            $table->integer('c_cost_acctgrp');
+            $table->char('c_cost_acctsub', 3)->nullable();
+            $table->integer('c_cost_acctsubgrp');
+            $table->char('c_cost', 3);
+            $table->string('e_cost');
 
             $table->timestamps();
             $table->softDeletes();
@@ -25,6 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('TRCHARTACCT');
+        Schema::dropIfExists('trchartacct');
     }
 };

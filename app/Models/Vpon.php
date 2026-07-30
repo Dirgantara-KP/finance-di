@@ -9,26 +9,29 @@ class Vpon extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'VPON';
+    protected $table = 'vpon';
 
     protected $fillable = [
-        'C_PGM',
-        'C_PGM_SUB',
-        'C_PGM_VER',
-        'C_PGM_VERACT',
-        'E_PGM',
-        'C_ORG_CORE',
-        'C_COST',
-        'E_COST',
-        'C_PGM_VERGRP',
-        'E_PGM_VERGRP',
-        'C_COST_HPP',
-        'E_COST_HPP',
+        'c_pgm',
+        'c_pgm_sub',
+        'c_pgm_ver',
+        'c_pgm_veract',
+        'e_pgm',
+        'c_org_core',
+        'c_cost',
+        'e_cost',
+        'c_pgm_vergrp',
+        'e_pgm_vergrp',
+        'c_cost_hpp',
+        'e_cost_hpp',
     ];
 
-    protected $casts = [
-        'CREATED_AT' => 'datetime',
-        'UPDATED_AT' => 'datetime',
-        'DELETED_AT' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
 }

@@ -9,19 +9,22 @@ class Tmcontr extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'TMCONTR';
+    protected $table = 'tmcontr';
 
     protected $fillable = [
-        'I_ID_CONTR',
-        'C_ORG_CONTR',
-        'I_CONTR',
-        'I_CONTR_REF',
-        'N_CONTR_PROJ',
+        'i_id_contr',
+        'c_org_contr',
+        'i_contr',
+        'i_contr_ref',
+        'n_contr_proj',
     ];
 
-    protected $casts = [
-        'CREATED_AT' => 'datetime',
-        'UPDATED_AT' => 'datetime',
-        'DELETED_AT' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
 }
