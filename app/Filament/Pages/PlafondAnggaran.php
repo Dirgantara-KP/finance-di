@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Exceptions\DuplicateTransactionException;
 use App\Models\TmbdgtPlafond;
 use App\Models\Tmcontr;
 use App\Models\Trchartacct;
@@ -102,6 +101,8 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public $cOrgContr = null;
 
+    public bool $canRestoreFromStorage = true;
+
     public function mount(): void
     {
         $currentYear = (int) date('Y');
@@ -158,14 +159,25 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         return $this->tahunAnggaran && $this->organisasi && $this->sandi && $this->pon && $this->kontrak;
     }
 
+    public function getFilterSignatureProperty(): string
+    {
+        return implode('|', [
+            $this->tahunAnggaran,
+            $this->organisasi,
+            $this->sandi,
+            $this->pon,
+            $this->kontrak,
+        ]);
+    }
+
     public function getCanInsertProperty(): bool
     {
         $currentYear = (int) date('Y');
 
         return (int) $this->tahunAnggaran === $currentYear
-            && empty($this->organisasi)
-            && empty($this->sandi)
-            && ! empty($this->ponOptions);
+            && $this->getAllFiltersSelectedProperty()
+            && $this->dataLoaded === true
+            && $this->existingId === null;
     }
 
     public function updatedInsertOrg(): void
@@ -186,14 +198,19 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function resetMonthData(): void
     {
+        $this->resetMonthValuesOnly();
+        $this->insertMonthly = array_fill(0, 12, 0);
+        $this->dataLoaded = false;
+    }
+
+    private function resetMonthValuesOnly(): void
+    {
         $this->saldoAwal = array_fill(0, 12, 0);
         $this->addMonth = array_fill(0, 12, 0);
         $this->saldoAkhir = array_fill(0, 12, 0);
-        $this->insertMonthly = array_fill(0, 12, 0);
         $this->totalSaldoAwal = 0;
         $this->totalPenambahan = 0;
         $this->totalSaldoAkhir = 0;
-        $this->dataLoaded = false;
         $this->canUpdate = false;
         $this->existingId = null;
         $this->namaProgram = '';
@@ -209,6 +226,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public function updatedOrganisasi(): void
     {
         $this->kontrak = null;
+        $this->canRestoreFromStorage = false;
         $this->resetAll();
         $this->loadKontrakOptions();
     }
@@ -225,21 +243,25 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function updatedTahunAnggaran(): void
     {
+        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
     public function updatedSandi(): void
     {
+        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
     public function updatedPon(): void
     {
+        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
     public function updatedKontrak(): void
     {
+        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
@@ -281,8 +303,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             ->whereRaw("CONCAT(c_org_contr, '-', i_contr) = ?", [$this->cOrgContr.'-'.$this->kontrak])
             ->first();
 
-        $this->resetMonthData();
-        $this->dataLoaded = true;
+        $this->resetMonthValuesOnly();
 
         if ($record) {
             $this->existingId = $record->id;
@@ -301,6 +322,15 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
                 $this->canUpdate = true;
             }
         }
+
+        $this->dataLoaded = true;
+
+        $this->dispatch('plafond-data-loaded', [
+            'saldoAwal' => $this->saldoAwal,
+            'addMonth' => $this->addMonth,
+            'existingId' => $this->existingId,
+            'canUpdate' => $this->canUpdate,
+        ]);
     }
 
     public function calculateAll(): void
@@ -322,21 +352,53 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function restoreState(array $state): void
     {
-        $this->tahunAnggaran = $state['filters']['tahunAnggaran'] ?? $this->tahunAnggaran;
-        $this->organisasi = $state['filters']['organisasi'] ?? $this->organisasi;
-        $this->sandi = $state['filters']['sandi'] ?? $this->sandi;
-        $this->pon = $state['filters']['pon'] ?? $this->pon;
-        $this->kontrak = $state['filters']['kontrak'] ?? $this->kontrak;
-        $this->loadKontrakOptions();
-
-        if (! empty($state['dataLoaded'])) {
-            $this->dataLoaded = true;
-            $this->existingId = $state['existingId'] ?? null;
-            $this->canUpdate = $state['canUpdate'] ?? false;
-            $this->saldoAwal = $state['saldoAwal'] ?? array_fill(0, 12, 0);
-            $this->addMonth = $state['addMonth'] ?? array_fill(0, 12, 0);
-            $this->calculateAll();
+        if (empty($state['dataLoaded']) || empty($state['existingId'])) {
+            return;
         }
+
+        if (($state['filters'] ?? null) !== $this->filterSignature) {
+            $this->dispatch('clear-plafond-storage');
+
+            return;
+        }
+
+        $record = TmbdgtPlafond::find($state['existingId']);
+
+        if (
+            ! $record
+            || (string) $record->c_bdgt_anggaran !== (string) $this->tahunAnggaran
+            || (string) $record->c_pgm_ver !== (string) $this->pon
+            || (string) $record->c_coa_dr !== (string) $this->sandi
+        ) {
+            $this->dispatch('clear-plafond-storage');
+
+            return;
+        }
+
+        $this->existingId = $record->id;
+        $this->saldoAwal = [];
+        $this->addMonth = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $this->saldoAwal[] = (int) ($record->{'v_bdgt_saldomonth'.$i} ?? 0);
+            $this->addMonth[] = (int) ($record->{'v_bdgt_addmonth'.$i} ?? 0);
+        }
+
+        $this->calculateAll();
+
+        $currentYear = (int) date('Y');
+        if ((int) $this->tahunAnggaran === $currentYear && $record->c_bdgt_contrstat === 'A3') {
+            $this->canUpdate = true;
+        }
+
+        $this->dataLoaded = true;
+
+        $this->dispatch('plafond-data-loaded', [
+            'saldoAwal' => $this->saldoAwal,
+            'addMonth' => $this->addMonth,
+            'existingId' => $this->existingId,
+            'canUpdate' => $this->canUpdate,
+        ]);
     }
 
     public function getRingkasan(): array
@@ -348,12 +410,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         ];
     }
 
-    public function updated($property): void
-    {
-        if (str_starts_with((string) $property, 'addMonth')) {
-            $this->calculateAll();
-        }
-    }
+    public function updated($property): void {}
 
     public function insert(): void
     {
@@ -445,10 +502,24 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             ->first();
 
         if ($existing) {
+            $this->organisasi = $this->insertOrg;
+            $this->sandi = $this->insertSandi;
+            $this->pon = $this->insertPon;
+            $this->kontrak = $this->insertKontrak;
+            $this->loadKontrakOptions();
+            $this->muatData();
+
+            $this->insertOrg = null;
+            $this->insertSandi = null;
+            $this->insertPon = null;
+            $this->insertKontrak = null;
+            $this->insertKontrakOptions = [];
+            $this->insertMonthly = array_fill(0, 12, 0);
+
             Notification::make()
-                ->title('Gagal menyimpan data')
-                ->body((new DuplicateTransactionException(reference: $this->insertOrg.'-'.$this->insertKontrak))->getMessage())
-                ->danger()
+                ->title('Data sudah ada')
+                ->body('Silakan gunakan tombol Update untuk mengubah data.')
+                ->info()
                 ->send();
 
             return;
@@ -477,16 +548,17 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
                 'c_org_center' => $cOrgContr,
             ];
 
-            $addTotal = 0;
+            $baseTotal = 0;
             for ($i = 1; $i <= 12; $i++) {
                 $val = max(0, (int) ($this->insertMonthly[$i - 1] ?? 0));
-                $addTotal += $val;
-                $data["v_bdgt_addmonth{$i}"] = $val;
+                $baseTotal += $val;
                 $data["v_bdgt_saldomonth{$i}"] = $val;
+                $data["v_bdgt_addmonth{$i}"] = 0;
             }
 
-            $data['v_bdgt_plantotal'] = $addTotal;
-            $data['v_bdgt_saldototal'] = $addTotal;
+            $data['v_bdgt_plantotal'] = $baseTotal;
+            $data['v_bdgt_saldototal'] = $baseTotal;
+            $data['v_bdgt_addtotal'] = 0;
 
             TmbdgtPlafond::create($data);
 
@@ -530,18 +602,28 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         try {
             DB::beginTransaction();
 
+            if (! $this->existingId) {
+                $this->muatData();
+            }
+
             $record = TmbdgtPlafond::find($this->existingId);
             if (! $record) {
-                throw new \Exception('Data tidak ditemukan');
+                DB::rollBack();
+
+                Notification::make()
+                    ->title('Data belum ada')
+                    ->body('Gunakan tombol Insert untuk menambah data baru.')
+                    ->warning()
+                    ->send();
+
+                return;
             }
 
             $updateData = [];
             for ($i = 1; $i <= 12; $i++) {
                 $updateData["v_bdgt_addmonth{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
-                $updateData["v_bdgt_saldomonth{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
             }
             $updateData['v_bdgt_addtotal'] = $this->totalPenambahan;
-            $updateData['v_bdgt_saldototal'] = $this->totalSaldoAkhir;
 
             $record->update($updateData);
 
@@ -565,6 +647,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function clearFilters(): void
     {
+        $this->canRestoreFromStorage = false;
         $this->tahunAnggaran = null;
         $this->organisasi = null;
         $this->sandi = null;
@@ -582,11 +665,14 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->clearFilters();
     }
 
-    public function autoSavePenambangan(): void
+    public function savePenambangan(int $index, int $value): void
     {
-        if (! $this->canUpdate || ! $this->existingId) {
+        if (! $this->canUpdate || ! $this->existingId || $index < 0 || $index > 11) {
             return;
         }
+
+        $this->addMonth[$index] = $value;
+        $this->calculateAll();
 
         try {
             DB::beginTransaction();
@@ -596,19 +682,20 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
                 throw new \Exception('Data tidak ditemukan');
             }
 
-            $updateData = [];
-            for ($i = 1; $i <= 12; $i++) {
-                $updateData["v_bdgt_addmonth{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
-                $updateData["v_bdgt_saldomonth{$i}"] = (int) ($this->saldoAkhir[$i - 1] ?? 0);
-            }
-            $updateData['v_bdgt_addtotal'] = $this->totalPenambahan;
-            $updateData['v_bdgt_saldototal'] = $this->totalSaldoAkhir;
-
-            $record->update($updateData);
+            $i = $index + 1;
+            $record->update([
+                "v_bdgt_addmonth{$i}" => $value,
+                'v_bdgt_addtotal' => $this->totalPenambahan,
+            ]);
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
+            Notification::make()
+                ->title('Gagal auto-save')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
         }
     }
 
