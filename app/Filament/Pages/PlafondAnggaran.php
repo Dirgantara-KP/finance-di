@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Url;
 
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
 {
@@ -36,14 +37,19 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     protected string $view = 'filament.pages.plafond-anggaran';
 
+    #[Url(except: null, keep: true)]
     public $tahunAnggaran;
 
+    #[Url(except: null, keep: true)]
     public $organisasi;
 
+    #[Url(except: null, keep: true)]
     public $sandi;
 
+    #[Url(except: null, keep: true)]
     public $pon;
 
+    #[Url(except: null, keep: true)]
     public $kontrak;
 
     public $tahunOptions = [];
@@ -103,7 +109,10 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             range($currentYear, $currentYear - 5),
             range($currentYear, $currentYear - 5)
         );
-        $this->tahunAnggaran = $currentYear;
+
+        if (! $this->tahunAnggaran) {
+            $this->tahunAnggaran = $currentYear;
+        }
 
         $this->organisasiOptions = Vororg::whereNotNull('c_org_cur')
             ->where('c_org_assetstat', 'OPN')
@@ -129,7 +138,19 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             ])
             ->toArray();
 
+        if ($this->organisasi) {
+            $this->loadKontrakOptions();
+        }
+
         $this->resetMonthData();
+
+        if ($this->getAllFiltersSelectedProperty()) {
+            try {
+                $this->muatData();
+            } catch (\Throwable $e) {
+                $this->resetMonthData();
+            }
+        }
     }
 
     public function getAllFiltersSelectedProperty(): bool
@@ -179,10 +200,16 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->namaSandi = '';
     }
 
+    private function resetAll(): void
+    {
+        $this->resetMonthData();
+        $this->dispatch('clear-plafond-storage');
+    }
+
     public function updatedOrganisasi(): void
     {
         $this->kontrak = null;
-        $this->resetMonthData();
+        $this->resetAll();
         $this->loadKontrakOptions();
     }
 
@@ -198,22 +225,22 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function updatedTahunAnggaran(): void
     {
-        $this->resetMonthData();
+        $this->resetAll();
     }
 
     public function updatedSandi(): void
     {
-        $this->resetMonthData();
+        $this->resetAll();
     }
 
     public function updatedPon(): void
     {
-        $this->resetMonthData();
+        $this->resetAll();
     }
 
     public function updatedKontrak(): void
     {
-        $this->resetMonthData();
+        $this->resetAll();
     }
 
     public function rules(): array
@@ -547,8 +574,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->cPgm = null;
         $this->cPgmSub = null;
         $this->cOrgContr = null;
-        $this->resetMonthData();
-        $this->dispatch('clear-plafond-storage');
+        $this->resetAll();
     }
 
     public function cancel(): void

@@ -1,9 +1,7 @@
 <x-filament-panels::page>
-    {{-- Panel Filter Plafond Anggaran --}}
     <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
         <div class="p-6">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                {{-- 1. Tahun Anggaran --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Tahun Anggaran <span class="text-red-500">*</span>
@@ -18,7 +16,6 @@
                     </x-filament::input.wrapper>
                 </div>
 
-                {{-- 2. Organisasi --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Organisasi <span class="text-red-500">*</span>
@@ -33,7 +30,6 @@
                     </x-filament::input.wrapper>
                 </div>
 
-                {{-- 3. Sandi --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Sandi <span class="text-red-500">*</span>
@@ -48,7 +44,6 @@
                     </x-filament::input.wrapper>
                 </div>
 
-                {{-- 4. PON --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         PON <span class="text-red-500">*</span>
@@ -63,7 +58,6 @@
                     </x-filament::input.wrapper>
                 </div>
 
-                {{-- 5. No. Kontrak --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         No. Kontrak <span class="text-red-500">*</span>
@@ -91,7 +85,6 @@
         </div>
     </div>
 
-    {{-- Tabel Rincian Plafond Anggaran --}}
     @php
         $q1 = 'bg-blue-50/50 dark:bg-blue-900/10';
         $q2 = 'bg-emerald-50/50 dark:bg-emerald-900/10';
@@ -132,12 +125,14 @@
                                 } else if (saved) {
                                     try {
                                         const d = JSON.parse(saved);
-                                        this.addMonth = d.addMonth || this.addMonth;
-                                        this.saldoAwal = d.saldoAwal || this.saldoAwal;
-                                        this.saldoAkhir = d.saldoAkhir || this.saldoAkhir;
-                                        this.totals = d.totals || this.totals;
                                         if (d.dataLoaded) {
+                                            this.addMonth = d.addMonth || this.addMonth;
+                                            this.saldoAwal = d.saldoAwal || this.saldoAwal;
+                                            this.saldoAkhir = d.saldoAkhir || this.saldoAkhir;
+                                            this.totals = d.totals || this.totals;
                                             $wire.restoreState(d);
+                                        } else {
+                                            this.recalculate();
                                         }
                                     } catch (e) {
                                         this.recalculate();
@@ -152,13 +147,6 @@
                                     saldoAwal: this.saldoAwal,
                                     saldoAkhir: this.saldoAkhir,
                                     totals: this.totals,
-                                    filters: {
-                                        tahunAnggaran: {{ json_encode($tahunAnggaran) }},
-                                        organisasi: {{ json_encode($organisasi) }},
-                                        sandi: {{ json_encode($sandi) }},
-                                        pon: {{ json_encode($pon) }},
-                                        kontrak: {{ json_encode($kontrak) }},
-                                    },
                                     dataLoaded: {{ $dataLoaded ? 'true' : 'false' }},
                                     existingId: {{ json_encode($existingId) }},
                                     canUpdate: {{ $canUpdate ? 'true' : 'false' }},
@@ -211,7 +199,6 @@
                              }
                          }"
                          @clear-plafond-storage.window="clearStorage()">
-                    {{-- Baris 1: Saldo Awal --}}
                     <tr class="even:bg-gray-50 dark:even:bg-white/5">
                         <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">1</td>
                         <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Saldo Awal</td>
@@ -221,7 +208,6 @@
                         <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white">{{ number_format($totalSaldoAwal, 0, ',', '.') }}</td>
                     </tr>
 
-                    {{-- Baris 2: Penambahan --}}
                     <tr class="even:bg-gray-50 dark:even:bg-white/5">
                         <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">2</td>
                         <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Penambahan</td>
@@ -256,7 +242,6 @@
                         <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white leading-5" x-text="format(totals.add)">{{ number_format($totalPenambahan, 0, ',', '.') }}</td>
                     </tr>
 
-                    {{-- Baris 3: Saldo Akhir --}}
                     <tr class="even:bg-gray-50 dark:even:bg-white/5">
                         <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">3</td>
                         <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Saldo Akhir</td>
@@ -270,8 +255,7 @@
         </div>
     </div>
 
-    {{-- Ringkasan Setelah Update --}}
-   @php($ringkasan = $this->getRingkasan())
+    @php($ringkasan = $this->getRingkasan())
    <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
        <div class="border-b border-gray-200 px-6 py-4 dark:border-white/10">
            <h3 class="text-base font-semibold text-gray-950 dark:text-white">Ringkasan Setelah Update</h3>
@@ -320,7 +304,6 @@
    </div>
 
 
-    {{-- Tombol Aksi --}}
     <div class="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
         <x-filament::button
             color="success"
