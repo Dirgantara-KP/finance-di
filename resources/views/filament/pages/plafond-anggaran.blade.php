@@ -108,7 +108,7 @@
                         <th class="w-12 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">No</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-950 dark:text-white">Uraian</th>
                         @foreach ($months as $i => $label)
-                            <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-[100px] {{ $monthBg[$i] }}">{{ $label }}</th>
+                            <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white min-w-25 {{ $monthBg[$i] }}">{{ $label }}</th>
                         @endforeach
                         <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-950 dark:text-white">Total</th>
                     </tr>
@@ -162,7 +162,6 @@
                                     dataLoaded: {{ $dataLoaded ? 'true' : 'false' }},
                                     existingId: {{ json_encode($existingId) }},
                                     canUpdate: {{ $canUpdate ? 'true' : 'false' }},
-                                    canInsert: {{ $canInsert ? 'true' : 'false' }},
                                 }));
                             },
                             clearStorage() {

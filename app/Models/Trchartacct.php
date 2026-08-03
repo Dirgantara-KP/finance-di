@@ -2,32 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Trchartacct extends Model
+/**
+ * @property string $C_COST
+ * @property string $E_COST
+ */
+#[Table(name: 'TRCHARTACCT', key: 'C_COST', timestamps: false)]
+class TrChartAcct extends Model
 {
-    use SoftDeletes;
-
-    protected $table = 'trchartacct';
-
     protected $fillable = [
-        'c_cost_bsis',
-        'c_cost_acctgrp',
-        'c_cost_acctsub',
-        'c_cost_acctsubgrp',
-        'c_cost',
-        'e_cost',
+        'C_COST',
+        'C_COST_BSIS',
+        'C_COST_ACCTGRP',
+        'C_COST_ACCTSUB',
+        'C_COST_ACCTSUBGRP',
+        'E_COST',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'c_cost_acctgrp' => 'integer',
-            'c_cost_acctsubgrp' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'deleted_at' => 'datetime',
-        ];
-    }
 }

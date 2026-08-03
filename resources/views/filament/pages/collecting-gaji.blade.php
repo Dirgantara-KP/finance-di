@@ -9,10 +9,10 @@
                         Tanggal Proses Gaji <span class="text-danger-500">*</span>
                     </label>
                     <x-filament::input.wrapper>
-                        <x-filament::input
-                            type="date"
-                            wire:model.live="tanggalProsesGaji"
-                        />
+                    <x-filament::input.index
+                        type="date"
+                        wire:model.live="tanggalProsesGaji"
+                    />
                     </x-filament::input.wrapper>
                 </div>
 
@@ -23,7 +23,7 @@
                     </label>
                     <div class="flex flex-wrap gap-2 sm:flex-nowrap">
                         <x-filament::input.wrapper class="flex-1">
-                            <x-filament::input
+                            <x-filament::input.index
                                 type="text"
                                 placeholder="BG/MM/YYYY/xxxx"
                                 wire:model.live="noBuktiGaji"
