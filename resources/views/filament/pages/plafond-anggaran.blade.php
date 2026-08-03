@@ -123,7 +123,6 @@
                                 add: {{ $totalPenambahan }},
                                 akhir: {{ $totalSaldoAkhir }}
                             },
-<<<<<<< HEAD
                             init() {
                                 const saved = sessionStorage.getItem('plafond_state');
                                 const hasPhpData = {{ $dataLoaded ? 'true' : 'false' }};
@@ -212,15 +211,6 @@
                              }
                          }"
                          @clear-plafond-storage.window="clearStorage()">
-=======
-                             sync(i) {
-                                 const val = parseInt(this.addMonth[i]) || 0;
-                                 this.addMonth[i] = val;
-                                 this.recalculate();
-                                 $wire.set('addMonth.' + i, val);
-                            }
-                        }">
->>>>>>> b7813e6d48cc21c01997cbb0cf54b890b42644aa
                     {{-- Baris 1: Saldo Awal --}}
                     <tr class="even:bg-gray-50 dark:even:bg-white/5">
                         <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">1</td>

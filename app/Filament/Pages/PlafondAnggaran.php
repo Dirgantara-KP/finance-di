@@ -12,7 +12,6 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-<<<<<<< HEAD
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
@@ -21,11 +20,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-=======
-use Filament\Schemas\Concerns\InteractsWithSchemas;
-use Filament\Schemas\Contracts\HasSchemas;
-
->>>>>>> b7813e6d48cc21c01997cbb0cf54b890b42644aa
 
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
 {
@@ -71,7 +65,6 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public $saldoAwal = [];
 
     public $addMonth = [];
-    public array $insertMonthly = [];
 
     public array $insertMonthly = [];
 
@@ -336,48 +329,9 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     }
 
     public function insert(): void
-<<<<<<< HEAD
     {
         if (! $this->getCanInsertProperty()) {
             return;
-=======
-{
-    if (! $this->canInsert) {
-        return;
-    }
-
-    $this->mountAction('insert');
-}
-
-public function insertAction(): Action
-{
-    return Action::make('insert')
-        ->label('Insert')
-        ->modalHeading('Tambah Data Plafond Anggaran')
-        ->modalContent(fn () => view('filament.modals.plafond-anggaran.insert-plafond-anggaran'))
-        ->modalSubmitActionLabel('Simpan')
-        ->modalCancelActionLabel('Batal')
-        ->modalIcon('heroicon-o-plus-circle')
-        ->action(function (): void {
-            $this->performInsert();
-        });
-}
-
-private function performInsert(): void
-{
-    $this->validate();
-
-    try {
-        DB::beginTransaction();
-
-        $addTotal = 0;
-        $monthly = [];
-
-        for ($i = 1; $i <= 12; $i++) {
-            $val = (int) ($this->insertMonthly[$i - 1] ?? 0);
-            $monthly[$i] = $val;
-            $addTotal += $val;
->>>>>>> b7813e6d48cc21c01997cbb0cf54b890b42644aa
         }
 
         $this->mountAction('insert');
@@ -541,11 +495,7 @@ private function performInsert(): void
                 ->send();
         }
     }
-<<<<<<< HEAD
 
-=======
-}
->>>>>>> b7813e6d48cc21c01997cbb0cf54b890b42644aa
     public function update(): void
     {
         $this->validate();
@@ -679,8 +629,6 @@ private function performInsert(): void
         $saldoAwalSql = implode(', ', $saldoAwalCols);
         $addSql = implode(', ', $addCols);
         $akhirSql = implode(', ', $akhirCols);
-
-
 
         $where = 'WHERE deleted_at IS NULL'
             .' AND C_BDGT_ANGGARAN = ?'
