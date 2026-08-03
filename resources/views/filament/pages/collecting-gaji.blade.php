@@ -5,61 +5,69 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {{-- 1. Tanggal Proses Gaji --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Tanggal Proses Gaji <span class="text-danger-500">*</span>
                     </label>
                     <x-filament::input.wrapper>
                         <x-filament::input
                             type="date"
                             wire:model.live="tanggalProsesGaji"
+                            class="h-10"
                         />
                     </x-filament::input.wrapper>
                 </div>
 
                 {{-- 2, 3, 4. No. Bukti Gaji + Cari + Pilih --}}
-                <div class="lg:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         No. Bukti Gaji
                     </label>
-                    <div class="flex flex-wrap gap-2 sm:flex-nowrap">
+                    <div class="flex items-stretch gap-2">
                         <x-filament::input.wrapper class="flex-1">
                             <x-filament::input
                                 type="text"
                                 placeholder="BG/MM/YYYY/xxxx"
                                 wire:model.live="noBuktiGaji"
+                                class="h-10"
                             />
                         </x-filament::input.wrapper>
-
-                        <x-filament::icon-button
-                            icon="heroicon-o-magnifying-glass"
-                            label="Cari No. Bukti"
-                            tooltip="Cari No. Bukti"
+ 
+                        {{-- Tombol Cari --}}
+                        <button
+                            type="button"
                             wire:click="cariNoBukti"
-                        />
-
-                        <x-filament::icon-button
-                            icon="heroicon-o-ellipsis-horizontal"
-                            label="Pilih No. Bukti"
-                            tooltip="Pilih No. Bukti"
+                            title="Cari No. Bukti"
+                            class="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg border border-gray-300 text-gray-500 transition hover:bg-gray-50 hover:text-primary-600 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
+                        >
+                            <x-filament::icon icon="heroicon-o-magnifying-glass" class="h-4 w-4" />
+                        </button>
+ 
+                        {{-- Tombol Pilih --}}
+                        <button
+                            type="button"
                             wire:click="pilihNoBukti"
-                        />
+                            title="Pilih No. Bukti"
+                            class="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg border border-gray-300 text-gray-500 transition hover:bg-gray-50 hover:text-primary-600 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
+                        >
+                            <x-filament::icon icon="heroicon-o-ellipsis-horizontal" class="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
 
                 {{-- 5. Bank/Kas --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Bank / Kas
                     </label>
                     <x-filament::input.wrapper>
-                        <x-filament::input.select wire:model.live="bankKas">
+                        <x-filament::input.select wire:model.live="bankKas" class="h-10">
                             <option value="">-- Pilih Bank/Kas --</option>
                             @foreach ($bankKasOptions as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
                         </x-filament::input.select>
                     </x-filament::input.wrapper>
-                </div>
+                </div> 
 
                 {{-- 6. Lokasi --}}
                 <div>
@@ -78,17 +86,18 @@
             </div>
 
             {{-- 7. Show Rekap per Unit Organisasi/Eselon --}}
-            <div class="mt-4 flex justify-end">
-                <x-filament::button
-                    color="gray"
-                    icon="heroicon-m-table-cells"
-                    wire:click="showRekapPerUnit"
-                >
+           <div class="mt-4 flex items-center justify-between gap-4 rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                     View Rekap Gaji per Unit Organisasi / Eselon
+                </span>
+                <x-filament::button
+                    color="primary"
+                    wire:click="showRekapPerUnit"
+                    class="shrink-0"
+                >
+                    Show
                 </x-filament::button>
             </div>
-        </div>
-    </div>
 
     {{-- 8, 9, 10. Tabel Rekap Cost Center --}}
     <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
@@ -101,7 +110,7 @@
 
         <div class="max-h-[420px] overflow-x-auto overflow-y-auto">
             <table class="w-full min-w-[860px]">
-                <thead class="sticky top-0 bg-gray-50 dark:bg-white/5">
+                <thead class="sticky top-0 bg-gray-100 dark:bg-white/10">
                     <tr class="border-b border-gray-200 dark:border-white/10">
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">No</th>
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">Ri</th>
