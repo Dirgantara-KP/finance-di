@@ -18,7 +18,7 @@
                 </div>
 
                 {{-- 2, 3, 4. No. Bukti Gaji + Cari + Pilih --}}
-                <div class="lg:col-span-2">
+                <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         No. Bukti Gaji
                     </label>
@@ -86,17 +86,18 @@
             </div>
 
             {{-- 7. Show Rekap per Unit Organisasi/Eselon --}}
-            <div class="mt-4 flex justify-end">
-                <x-filament::button
-                    color="gray"
-                    icon="heroicon-m-table-cells"
-                    wire:click="showRekapPerUnit"
-                >
+           <div class="mt-4 flex items-center justify-between gap-4 rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                     View Rekap Gaji per Unit Organisasi / Eselon
+                </span>
+                <x-filament::button
+                    color="primary"
+                    wire:click="showRekapPerUnit"
+                    class="shrink-0"
+                >
+                    Show
                 </x-filament::button>
             </div>
-        </div>
-    </div>
 
     {{-- 8, 9, 10. Tabel Rekap Cost Center --}}
     <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
@@ -109,7 +110,7 @@
 
         <div class="max-h-[420px] overflow-x-auto overflow-y-auto">
             <table class="w-full min-w-[860px]">
-                <thead class="sticky top-0 bg-gray-50 dark:bg-white/5">
+                <thead class="sticky top-0 bg-gray-100 dark:bg-white/10">
                     <tr class="border-b border-gray-200 dark:border-white/10">
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">No</th>
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">Ri</th>
