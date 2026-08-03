@@ -2,22 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-/**
- * @property string $C_PGM_VER
- * @property string $E_PGM
- */
-#[Table(name: 'VPON', key: 'id', timestamps: false)]
-class VpOn extends Model
+class Vpon extends Model
 {
+    use SoftDeletes;
+
+    protected $table = 'vpon';
+
     protected $fillable = [
-        'C_PGM',
-        'C_PGM_SUB',
-        'C_PGM_VER',
-        'C_PGM_VERACT',
-        'C_COST_HPP',
-        'E_PGM',
+        'c_pgm',
+        'c_pgm_sub',
+        'c_pgm_ver',
+        'c_pgm_veract',
+        'c_pgm_vergrp',
+        'e_pgm',
+        'c_org_core',
+        'c_cost',
+        'e_cost',
+        'c_cost_hpp',
+        'e_cost_hpp',
     ];
 }

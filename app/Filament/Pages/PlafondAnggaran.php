@@ -635,7 +635,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             .' AND C_ORG LIKE ?'
             .' AND C_COA_DR LIKE ?'
             .' AND C_PGM_VER = ?'
-            ." AND C_ORG_CONTR || '-' || I_CONTR = ?";
+            .' AND CONCAT(C_ORG_CONTR, "-", I_CONTR) = ?';
 
         $sql1 = "SELECT 1 AS id, 'Saldo Awal' AS uraian, {$saldoAwalSql}, COALESCE(SUM(V_BDGT_SALDOTOTAL), 0) AS total FROM {$table} {$where}";
         $sql2 = "SELECT 2 AS id, 'Penambahan' AS uraian, {$addSql}, COALESCE(SUM(V_BDGT_ADDTOTAL), 0) AS total FROM {$table} {$where}";
@@ -648,7 +648,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             $this->organisasi.'%',
             $this->sandi.'%',
             $this->pon,
-            $this->kontrak,
+            $this->cOrgContr.'-'.$this->kontrak,
         ];
 
         return TmbdgtPlafond::withoutGlobalScopes()

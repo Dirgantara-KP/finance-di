@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-/**
- * @property string $C_ORG_CONTR
- * @property string $I_CONTR
- */
-#[Table(name: 'TMCONTR', key: 'I_CONTR', timestamps: false)]
-class TmContr extends Model
+class Tmcontr extends Model
 {
+    use SoftDeletes;
+
+    protected $table = 'tmcontr';
+
     protected $fillable = [
-        'I_CONTR',
-        'C_ORG_CONTR',
+        'i_id_contr',
+        'c_org_contr',
+        'i_contr',
+        'i_contr_ref',
+        'n_contr_proj',
     ];
 }
