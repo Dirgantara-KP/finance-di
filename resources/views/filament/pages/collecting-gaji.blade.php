@@ -3,18 +3,35 @@
     <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <div class="p-6">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {{-- 1. Tanggal Proses Gaji --}}
+                     {{-- 1. Tanggal Proses Gaji --}}
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Tanggal Proses Gaji <span class="text-danger-500">*</span>
+                        Tanggal Proses Gaji <span class="text-red-500">*</span>
                     </label>
-                    <x-filament::input.wrapper>
-                        <x-filament::input
-                            type="date"
-                            wire:model.live="tanggalProsesGaji"
-                            class="h-10"
-                        />
-                    </x-filament::input.wrapper>
+                    <div
+                        x-data="{
+                            init() {
+                                flatpickr(this.$refs.dateInput, {
+                                    dateFormat: 'Y-m-d',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    defaultDate: @js($tanggalProsesGaji),
+                                    onChange: (selectedDates, dateStr) => {
+                                        $wire.tanggalProsesGaji = dateStr;
+                                    },
+                                });
+                            }
+                        }"
+                    >
+                        <x-filament::input.wrapper>
+                            <x-filament::input
+                                type="text"
+                                x-ref="dateInput"
+                                placeholder="dd/mm/yyyy"
+                                class="h-10"
+                            />
+                        </x-filament::input.wrapper>
+                    </div>
                 </div>
 
                 {{-- 2, 3, 4. No. Bukti Gaji + Cari + Pilih --}}
@@ -110,7 +127,7 @@
 
         <div class="max-h-[420px] overflow-x-auto overflow-y-auto">
             <table class="w-full min-w-[860px]">
-                <thead class="sticky top-0 bg-gray-100 dark:bg-white/10">
+                <thead class="sticky top-0 z-10 bg-gray-100 dark:bg-white/10">
                     <tr class="border-b border-gray-200 dark:border-white/10">
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">No</th>
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">Ri</th>
@@ -153,7 +170,8 @@
                 </tbody>
                 @if (count($rekapCostCenter) > 0)
                     <tfoot>
-                        <tr class="border-t border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
+                        <tfoot>
+                            <tr class="border-t border-gray-200 bg-gray-200 dark:border-white/10 dark:bg-white/20">
                             <td colspan="4" class="px-3 py-3 text-right text-sm font-semibold text-gray-950 dark:text-white">TOTAL</td>
                             <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white">
                                 {{ number_format(collect($rekapCostCenter)->sum('besar_gaji'), 0, ',', '.') }}
@@ -249,43 +267,7 @@
         </x-filament::button>
     </div>
 
-    {{-- Pop-up / Layar Tambahan --}}
-    <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <div class="border-b border-gray-200 px-6 py-4 dark:border-white/10">
-            <h3 class="text-base font-semibold text-gray-950 dark:text-white">Pop-up / Layar Tambahan</h3>
-        </div>
-        <div class="divide-y divide-gray-200 dark:divide-white/5">
-            <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <div class="flex items-start gap-3 sm:items-center">
-                    <x-filament::icon icon="heroicon-o-table-cells" class="h-6 w-6 shrink-0 text-gray-400" />
-                    <div>
-                        <p class="text-sm font-medium text-gray-950 dark:text-white">Rekap Gaji per Unit Organisasi / Eselon</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            Menampilkan rekap berdasarkan unit organisasi/eselon. Kolom: No., Kode & Nama Unit Organisasi, Besar Gaji, Pihak Lain, Yang Bersangkutan.
-                        </p>
-                    </div>
-                </div>
-                <x-filament::button color="gray" size="sm" wire:click="showRekapPerUnit" class="shrink-0 justify-center">
-                    Show
-                </x-filament::button>
-            </div>
 
-            <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <div class="flex items-start gap-3 sm:items-center">
-                    <x-filament::icon icon="heroicon-o-users" class="h-6 w-6 shrink-0 text-gray-400" />
-                    <div>
-                        <p class="text-sm font-medium text-gray-950 dark:text-white">Daftar Gaji Karyawan (Rincian)</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            Ditampilkan saat klik tombol "..." pada kolom Ri. Kolom: NIK, Nama Karyawan, Unit Org., Via/Bank, Lokasi, Besar Gaji, Pihak Lain, Yang Bersangkutan.
-                        </p>
-                    </div>
-                </div>
-                <x-filament::button color="gray" size="sm" disabled class="shrink-0 justify-center">
-                    Lihat
-                </x-filament::button>
-            </div>
-        </div>
-    </div>
 
     {{-- Modal: Rekap per Unit Organisasi / Eselon --}}
     <x-filament::modal id="rekap-per-unit" width="4xl">
@@ -307,4 +289,8 @@
 
         @include('filament.modals.collecting-gaji.gaji-non-corporate')
     </x-filament::modal>
+    @once
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js" defer></script>
+    @endonce
 </x-filament-panels::page>
