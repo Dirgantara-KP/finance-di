@@ -2,23 +2,16 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\TmbdgtPlafond;
-use App\Models\Tmcontr;
-use App\Models\Trchartacct;
-use App\Models\Vororg;
-use App\Models\Vpon;
+use App\Exceptions\DuplicateTransactionException;
+use App\Exceptions\ForbiddenActionException;
+use App\Services\PlafondAnggaranService;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Url;
 
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
@@ -35,6 +28,13 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     protected static ?string $slug = 'plafond-anggaran';
 
     protected string $view = 'filament.pages.plafond-anggaran';
+
+    private PlafondAnggaranService $service;
+
+    public function boot(PlafondAnggaranService $service): void
+    {
+        $this->service = $service;
+    }
 
     #[Url(except: null, keep: true)]
     public $tahunAnggaran;
@@ -65,23 +65,13 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public $canUpdate = false;
 
+    public $isUpdating = false;
+
     public $existingId = null;
 
     public $saldoAwal = [];
 
     public $addMonth = [];
-
-    public array $insertMonthly = [];
-
-    public $insertOrg = null;
-
-    public $insertSandi = null;
-
-    public $insertPon = null;
-
-    public $insertKontrak = null;
-
-    public $insertKontrakOptions = [];
 
     public $saldoAkhir = [];
 
@@ -101,54 +91,30 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public $cOrgContr = null;
 
-    public bool $canRestoreFromStorage = true;
+    /** @var array<int,int> snapshot addMonth saat load — baseline untuk dirty tracking */
+    public array $cleanAddMonth = [];
 
     public function mount(): void
     {
-        $currentYear = (int) date('Y');
-        $this->tahunOptions = array_combine(
-            range($currentYear, $currentYear - 5),
-            range($currentYear, $currentYear - 5)
-        );
-
         if (! $this->tahunAnggaran) {
-            $this->tahunAnggaran = $currentYear;
+            $this->tahunAnggaran = now()->year;
         }
 
-        $this->organisasiOptions = Vororg::whereNotNull('c_org_cur')
-            ->where('c_org_assetstat', 'OPN')
-            ->orderBy('c_org_cur')
-            ->get()
-            ->mapWithKeys(fn ($item) => [
-                $item->c_org_cur => $item->c_org_cur.' || '.$item->n_org_cur,
-            ])
-            ->toArray();
+        $options = $this->service->getDropdownOptions($this->organisasi);
+        $this->tahunOptions = $options['tahun'];
+        $this->organisasiOptions = $options['organisasi'];
+        $this->sandiOptions = $options['sandi'];
+        $this->ponOptions = $options['pon'];
+        $this->kontrakOptions = $options['kontrak'];
 
-        $this->sandiOptions = Trchartacct::where('c_cost_bsis', 'CC')
-            ->where('c_cost_acctsub', '1')
-            ->get()
-            ->mapWithKeys(fn ($item) => [
-                $item->c_cost => $item->c_cost.' || '.$item->e_cost,
-            ])
-            ->toArray();
-
-        $this->ponOptions = Vpon::where('c_pgm_veract', 'OPN')
-            ->get()
-            ->mapWithKeys(fn ($item) => [
-                $item->c_pgm_ver => $item->c_pgm_ver.' || '.$item->e_pgm,
-            ])
-            ->toArray();
-
-        if ($this->organisasi) {
-            $this->loadKontrakOptions();
-        }
+        $this->sanitizeUrlFilters();
 
         $this->resetMonthData();
 
         if ($this->getAllFiltersSelectedProperty()) {
             try {
-                $this->muatData();
-            } catch (\Throwable $e) {
+                $this->loadData();
+            } catch (\Throwable) {
                 $this->resetMonthData();
             }
         }
@@ -159,20 +125,38 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         return $this->tahunAnggaran && $this->organisasi && $this->sandi && $this->pon && $this->kontrak;
     }
 
-    public function getFilterSignatureProperty(): string
+    /**
+     * Filter datang dari URL (#[Url]) — bisa basi (opsi dihapus dari master).
+     * Nilai yang tak lagi jadi anggota opsi direset, biar load data tak pakai kunci sampah.
+     */
+    private function sanitizeUrlFilters(): void
     {
-        return implode('|', [
-            $this->tahunAnggaran,
-            $this->organisasi,
-            $this->sandi,
-            $this->pon,
-            $this->kontrak,
-        ]);
+        if ($this->tahunAnggaran !== null && ! in_array((int) $this->tahunAnggaran, $this->tahunOptions, true)) {
+            $this->tahunAnggaran = now()->year;
+        }
+
+        if ($this->organisasi !== null && ! array_key_exists($this->organisasi, $this->organisasiOptions)) {
+            $this->organisasi = null;
+        }
+
+        if ($this->sandi !== null && ! array_key_exists($this->sandi, $this->sandiOptions)) {
+            $this->sandi = null;
+        }
+
+        if ($this->pon !== null && ! array_key_exists($this->pon, $this->ponOptions)) {
+            $this->pon = null;
+        }
+
+        $this->loadContractOptions();
+
+        if ($this->kontrak !== null && ! array_key_exists($this->kontrak, $this->kontrakOptions)) {
+            $this->kontrak = null;
+        }
     }
 
     public function getCanInsertProperty(): bool
     {
-        $currentYear = (int) date('Y');
+        $currentYear = now()->year;
 
         return (int) $this->tahunAnggaran === $currentYear
             && $this->getAllFiltersSelectedProperty()
@@ -180,26 +164,20 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             && $this->existingId === null;
     }
 
-    public function updatedInsertOrg(): void
+    public function getIsDirtyProperty(): bool
     {
-        $this->insertKontrak = null;
-        $this->loadInsertKontrakOptions();
-    }
-
-    public function loadInsertKontrakOptions(): void
-    {
-        $this->insertKontrakOptions = [];
-        if ($this->insertOrg) {
-            $this->insertKontrakOptions = Tmcontr::where('c_org_contr', $this->insertOrg)
-                ->pluck('i_contr', 'i_contr')
-                ->toArray();
+        for ($i = 0; $i < 12; $i++) {
+            if ((int) ($this->addMonth[$i] ?? 0) !== (int) ($this->cleanAddMonth[$i] ?? 0)) {
+                return true;
+            }
         }
+
+        return false;
     }
 
     public function resetMonthData(): void
     {
         $this->resetMonthValuesOnly();
-        $this->insertMonthly = array_fill(0, 12, 0);
         $this->dataLoaded = false;
     }
 
@@ -208,6 +186,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->saldoAwal = array_fill(0, 12, 0);
         $this->addMonth = array_fill(0, 12, 0);
         $this->saldoAkhir = array_fill(0, 12, 0);
+        $this->cleanAddMonth = array_fill(0, 12, 0);
         $this->totalSaldoAwal = 0;
         $this->totalPenambahan = 0;
         $this->totalSaldoAkhir = 0;
@@ -220,51 +199,43 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     private function resetAll(): void
     {
         $this->resetMonthData();
-        $this->dispatch('clear-plafond-storage');
     }
 
     public function updatedOrganisasi(): void
     {
         $this->kontrak = null;
-        $this->canRestoreFromStorage = false;
         $this->resetAll();
-        $this->loadKontrakOptions();
+        $this->loadContractOptions();
     }
 
-    public function loadKontrakOptions(): void
+    public function loadContractOptions(): void
     {
-        $this->kontrakOptions = [];
-        if ($this->organisasi) {
-            $this->kontrakOptions = Tmcontr::where('c_org_contr', $this->organisasi)
-                ->pluck('i_contr', 'i_contr')
-                ->toArray();
-        }
+        $this->kontrakOptions = $this->organisasi
+            ? $this->service->getKontrakOptions($this->organisasi)
+            : [];
     }
 
     public function updatedTahunAnggaran(): void
     {
-        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
     public function updatedSandi(): void
     {
-        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
     public function updatedPon(): void
     {
-        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
     public function updatedKontrak(): void
     {
-        $this->canRestoreFromStorage = false;
         $this->resetAll();
     }
 
+    /** @return array<string, string|string[]> */
     public function rules(): array
     {
         return [
@@ -273,132 +244,40 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             'sandi' => 'required',
             'pon' => 'required',
             'kontrak' => 'required',
-            'insertMonthly.*' => ['numeric', 'min:0'],
         ];
     }
 
-    public function muatData(): void
+    public function loadData(): void
     {
         $this->validate();
 
-        $ponRecord = Vpon::where('c_pgm_ver', $this->pon)->first();
-        if ($ponRecord) {
-            $this->cPgm = $ponRecord->c_pgm;
-            $this->cPgmSub = $ponRecord->c_pgm_sub;
-            $this->namaProgram = $ponRecord->e_pgm;
+        try {
+            $state = $this->service->load([
+                'tahun' => $this->tahunAnggaran,
+                'org' => $this->organisasi,
+                'sandi' => $this->sandi,
+                'pon' => $this->pon,
+                'kontrak' => $this->kontrak,
+            ]);
+        } catch (\Throwable) {
+            $this->resetMonthData();
+
+            throw new \RuntimeException('Gagal memuat data plafond');
         }
-
-        $sandiRecord = Trchartacct::where('c_cost', $this->sandi)->first();
-        $this->namaSandi = $sandiRecord->e_cost ?? '';
-
-        $kontrakRecord = Tmcontr::where('i_contr', $this->kontrak)
-            ->where('c_org_contr', $this->organisasi)
-            ->first();
-        $this->cOrgContr = $kontrakRecord->c_org_contr ?? $this->organisasi;
-
-        $record = TmbdgtPlafond::where('c_bdgt_anggaran', $this->tahunAnggaran)
-            ->where('c_org', 'LIKE', $this->organisasi.'%')
-            ->where('c_pgm_ver', $this->pon)
-            ->where('c_coa_dr', $this->sandi)
-            ->whereRaw("CONCAT(c_org_contr, '-', i_contr) = ?", [$this->cOrgContr.'-'.$this->kontrak])
-            ->first();
 
         $this->resetMonthValuesOnly();
-
-        if ($record) {
-            $this->existingId = $record->id;
-
-            for ($i = 1; $i <= 12; $i++) {
-                $saldoField = "v_bdgt_saldomonth{$i}";
-                $addField = "v_bdgt_addmonth{$i}";
-                $this->saldoAwal[$i - 1] = (int) ($record->$saldoField ?? 0);
-                $this->addMonth[$i - 1] = (int) ($record->$addField ?? 0);
-            }
-
-            $this->calculateAll();
-
-            $currentYear = (int) date('Y');
-            if ((int) $this->tahunAnggaran === $currentYear && $record->c_bdgt_contrstat === 'A3') {
-                $this->canUpdate = true;
-            }
-        }
-
-        $this->dataLoaded = true;
-
-        $this->dispatch('plafond-data-loaded', [
-            'saldoAwal' => $this->saldoAwal,
-            'addMonth' => $this->addMonth,
-            'existingId' => $this->existingId,
-            'canUpdate' => $this->canUpdate,
-        ]);
+        $this->applyLoadedState($state);
     }
 
     public function calculateAll(): void
     {
-        $totalAwal = 0;
-        $totalAdd = 0;
-        $totalAkhir = 0;
-        for ($i = 0; $i < 12; $i++) {
-            $this->addMonth[$i] = (int) ($this->addMonth[$i] ?? 0);
-            $this->saldoAkhir[$i] = $this->saldoAwal[$i] + $this->addMonth[$i];
-            $totalAwal += $this->saldoAwal[$i];
-            $totalAdd += $this->addMonth[$i];
-            $totalAkhir += $this->saldoAkhir[$i];
-        }
-        $this->totalSaldoAwal = $totalAwal;
-        $this->totalPenambahan = $totalAdd;
-        $this->totalSaldoAkhir = $totalAkhir;
-    }
+        $result = $this->service->calculateAll($this->saldoAwal, $this->addMonth);
 
-    public function restoreState(array $state): void
-    {
-        if (empty($state['dataLoaded']) || empty($state['existingId'])) {
-            return;
-        }
-
-        if (($state['filters'] ?? null) !== $this->filterSignature) {
-            $this->dispatch('clear-plafond-storage');
-
-            return;
-        }
-
-        $record = TmbdgtPlafond::find($state['existingId']);
-
-        if (
-            ! $record
-            || (string) $record->c_bdgt_anggaran !== (string) $this->tahunAnggaran
-            || (string) $record->c_pgm_ver !== (string) $this->pon
-            || (string) $record->c_coa_dr !== (string) $this->sandi
-        ) {
-            $this->dispatch('clear-plafond-storage');
-
-            return;
-        }
-
-        $this->existingId = $record->id;
-        $this->saldoAwal = [];
-        $this->addMonth = [];
-
-        for ($i = 1; $i <= 12; $i++) {
-            $this->saldoAwal[] = (int) ($record->{'v_bdgt_saldomonth'.$i} ?? 0);
-            $this->addMonth[] = (int) ($record->{'v_bdgt_addmonth'.$i} ?? 0);
-        }
-
-        $this->calculateAll();
-
-        $currentYear = (int) date('Y');
-        if ((int) $this->tahunAnggaran === $currentYear && $record->c_bdgt_contrstat === 'A3') {
-            $this->canUpdate = true;
-        }
-
-        $this->dataLoaded = true;
-
-        $this->dispatch('plafond-data-loaded', [
-            'saldoAwal' => $this->saldoAwal,
-            'addMonth' => $this->addMonth,
-            'existingId' => $this->existingId,
-            'canUpdate' => $this->canUpdate,
-        ]);
+        $this->addMonth = $result['addMonth'];
+        $this->saldoAkhir = $result['saldoAkhir'];
+        $this->totalSaldoAwal = $result['totalSaldoAwal'];
+        $this->totalPenambahan = $result['totalPenambahan'];
+        $this->totalSaldoAkhir = $result['totalSaldoAkhir'];
     }
 
     public function getRingkasan(): array
@@ -410,245 +289,122 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         ];
     }
 
-    public function updated($property): void {}
-
     public function insert(): void
     {
+        // Insert hanya aktif saat data belum ada (existingId null) + semua filter terisi
         if (! $this->getCanInsertProperty()) {
             return;
         }
 
-        $this->mountAction('insert');
-    }
-
-    public function insertAction(): Action
-    {
-        return Action::make('insert')
-            ->label('Insert')
-            ->modalHeading('Tambah Data Plafond Anggaran')
-            ->modalContent(fn () => view('filament.modals.plafond-anggaran.insert-plafond-anggaran', [
-                'tahunAnggaran' => $this->tahunAnggaran,
-                'organisasiOptions' => $this->organisasiOptions,
-                'sandiOptions' => $this->sandiOptions,
-                'ponOptions' => $this->ponOptions,
-                'insertOrg' => $this->insertOrg,
-                'insertKontrakOptions' => $this->insertKontrakOptions,
-            ]))
-            ->modalSubmitActionLabel('Simpan')
-            ->modalCancelActionLabel('Batal')
-            ->modalIcon('heroicon-o-plus-circle')
-            ->action(function (): void {
-                $this->performInsert();
-            });
+        $this->performInsert();
     }
 
     private function performInsert(): void
     {
+        $this->validate();
+
         try {
-            $this->validate([
-                'insertOrg' => ['required'],
-                'insertSandi' => ['required'],
-                'insertPon' => ['required'],
-                'insertKontrak' => ['required'],
-                'insertMonthly.*' => ['numeric', 'min:0'],
+            $this->service->insert([
+                'tahun' => $this->tahunAnggaran,
+                'org' => $this->organisasi,
+                'sandi' => $this->sandi,
+                'pon' => $this->pon,
+                'kontrak' => $this->kontrak,
+                'add_month' => $this->addMonth,
             ]);
-        } catch (ValidationException $e) {
+
+            $this->loadData();
+
             Notification::make()
-                ->title('Validasi gagal')
-                ->body(implode(' ', Arr::flatten($e->validator->errors()->messages())))
-                ->danger()
+                ->title('Data Plafond Anggaran berhasil disimpan')
+                ->success()
                 ->send();
-
-            throw $e;
-        }
-
-        foreach ([
-            'organisasi' => [$this->insertOrg, 6],
-            'sandi' => [$this->insertSandi, 3],
-            'pon' => [$this->insertPon, 3],
-        ] as $label => [$value, $max]) {
-            if (strlen((string) $value) > $max) {
-                Notification::make()
-                    ->title('Validasi gagal')
-                    ->body(ucfirst($label).' melebihi panjang maksimal ('.$max.' karakter).')
-                    ->danger()
-                    ->send();
-
-                return;
-            }
-        }
-
-        $ponRecord = Vpon::where('c_pgm_ver', $this->insertPon)->first();
-        if (! $ponRecord) {
-            Notification::make()
-                ->title('Gagal menyimpan data')
-                ->body('Program / PON tidak ditemukan.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        $kontrakRecord = Tmcontr::where('i_contr', $this->insertKontrak)
-            ->where('c_org_contr', $this->insertOrg)
-            ->first();
-        $cOrgContr = $kontrakRecord->c_org_contr ?? $this->insertOrg;
-
-        $existing = TmbdgtPlafond::where('c_bdgt_anggaran', $this->tahunAnggaran)
-            ->where('c_org', 'LIKE', $this->insertOrg.'%')
-            ->where('c_pgm_ver', $this->insertPon)
-            ->where('c_coa_dr', $this->insertSandi)
-            ->whereRaw("CONCAT(c_org_contr, '-', i_contr) = ?", [$cOrgContr.'-'.$this->insertKontrak])
-            ->first();
-
-        if ($existing) {
-            $this->organisasi = $this->insertOrg;
-            $this->sandi = $this->insertSandi;
-            $this->pon = $this->insertPon;
-            $this->kontrak = $this->insertKontrak;
-            $this->loadKontrakOptions();
-            $this->muatData();
-
-            $this->insertOrg = null;
-            $this->insertSandi = null;
-            $this->insertPon = null;
-            $this->insertKontrak = null;
-            $this->insertKontrakOptions = [];
-            $this->insertMonthly = array_fill(0, 12, 0);
+        } catch (DuplicateTransactionException) {
+            $this->loadData();
 
             Notification::make()
                 ->title('Data sudah ada')
                 ->body('Silakan gunakan tombol Update untuk mengubah data.')
                 ->info()
                 ->send();
-
-            return;
-        }
-
-        try {
-            DB::beginTransaction();
-
-            $data = [
-                'c_source' => 'COL',
-                'c_org_id' => 'CO',
-                'c_org' => $this->insertOrg,
-                'c_org_contr' => $cOrgContr,
-                'i_contr' => $this->insertKontrak,
-                'c_bdgt_contrstat' => 'A3',
-                'c_bdgt_contrinex' => 'I',
-                'c_bdgt_anggaran' => $this->tahunAnggaran,
-                'c_pgm' => $ponRecord->c_pgm,
-                'c_pgm_sub' => $ponRecord->c_pgm_sub,
-                'c_pgm_ver' => $this->insertPon,
-                'c_coa_dr' => $this->insertSandi,
-                'c_coa_cr' => 'A23',
-                'c_cy' => 'IDR',
-                'i_entry' => auth()->user()?->nik ?? '900293',
-                'd_entry' => now(),
-                'c_org_center' => $cOrgContr,
-            ];
-
-            $baseTotal = 0;
-            for ($i = 1; $i <= 12; $i++) {
-                $val = max(0, (int) ($this->insertMonthly[$i - 1] ?? 0));
-                $baseTotal += $val;
-                $data["v_bdgt_saldomonth{$i}"] = $val;
-                $data["v_bdgt_addmonth{$i}"] = 0;
-            }
-
-            $data['v_bdgt_plantotal'] = $baseTotal;
-            $data['v_bdgt_saldototal'] = $baseTotal;
-            $data['v_bdgt_addtotal'] = 0;
-
-            TmbdgtPlafond::create($data);
-
-            DB::commit();
-
+        } catch (ForbiddenActionException $e) {
             Notification::make()
-                ->title('Data Plafond Anggaran berhasil disimpan')
-                ->success()
+                ->title('Aksi ditolak')
+                ->body($e->getMessage())
+                ->warning()
                 ->send();
-
-            $this->dispatch('clear-plafond-storage');
-
-            $this->organisasi = $this->insertOrg;
-            $this->sandi = $this->insertSandi;
-            $this->pon = $this->insertPon;
-            $this->kontrak = $this->insertKontrak;
-            $this->loadKontrakOptions();
-
-            $this->insertOrg = null;
-            $this->insertSandi = null;
-            $this->insertPon = null;
-            $this->insertKontrak = null;
-            $this->insertKontrakOptions = [];
-            $this->insertMonthly = array_fill(0, 12, 0);
-
-            $this->muatData();
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (\Throwable $e) {
+            report($e);
             Notification::make()
                 ->title('Gagal menyimpan data')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+            throw $e;
         }
     }
 
     public function update(): void
     {
+        if ($this->isUpdating) {
+            return;
+        }
+
         $this->validate();
 
+        if (! $this->existingId) {
+            $this->loadData();
+
+            return;
+        }
+
+        if (! $this->isDirty) {
+            Notification::make()
+                ->title('Tidak ada perubahan')
+                ->body('Edit cell Penambahan terlebih dahulu sebelum klik Update.')
+                ->info()
+                ->send();
+
+            return;
+        }
+
+        $this->isUpdating = true;
+
         try {
-            DB::beginTransaction();
-
-            if (! $this->existingId) {
-                $this->muatData();
-            }
-
-            $record = TmbdgtPlafond::find($this->existingId);
-            if (! $record) {
-                DB::rollBack();
-
-                Notification::make()
-                    ->title('Data belum ada')
-                    ->body('Gunakan tombol Insert untuk menambah data baru.')
-                    ->warning()
-                    ->send();
-
-                return;
-            }
-
-            $updateData = [];
-            for ($i = 1; $i <= 12; $i++) {
-                $updateData["v_bdgt_addmonth{$i}"] = (int) ($this->addMonth[$i - 1] ?? 0);
-            }
-            $updateData['v_bdgt_addtotal'] = $this->totalPenambahan;
-
-            $record->update($updateData);
-
-            DB::commit();
+            $this->service->update(
+                (int) $this->existingId,
+                $this->saldoAwal,
+                $this->addMonth,
+            );
 
             Notification::make()
                 ->title('Data Plafond Anggaran berhasil diupdate')
                 ->success()
                 ->send();
 
-            $this->muatData();
-        } catch (\Exception $e) {
-            DB::rollBack();
+            $this->loadData();
+        } catch (ForbiddenActionException $e) {
+            Notification::make()
+                ->title('Aksi ditolak')
+                ->body($e->getMessage())
+                ->warning()
+                ->send();
+        } catch (\Throwable $e) {
+            report($e);
             Notification::make()
                 ->title('Gagal mengupdate data')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+            throw $e;
+        } finally {
+            $this->isUpdating = false;
         }
     }
 
     public function clearFilters(): void
     {
-        $this->canRestoreFromStorage = false;
-        $this->tahunAnggaran = null;
+        $this->tahunAnggaran = now()->year; // match mount() default — null disables cascading dropdowns
         $this->organisasi = null;
         $this->sandi = null;
         $this->pon = null;
@@ -665,38 +421,29 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->clearFilters();
     }
 
-    public function savePenambangan(int $index, int $value): void
+    private function applyLoadedState(array $state): void
     {
-        if (! $this->canUpdate || ! $this->existingId || $index < 0 || $index > 11) {
-            return;
-        }
+        $this->cPgm = $state['cPgm'] ?? $this->cPgm;
+        $this->cPgmSub = $state['cPgmSub'] ?? $this->cPgmSub;
+        $this->namaProgram = $state['namaProgram'] ?? $this->namaProgram;
+        $this->namaSandi = $state['namaSandi'] ?? $this->namaSandi;
+        $this->cOrgContr = $state['cOrgContr'] ?? $this->cOrgContr;
+        $this->existingId = $state['existingId'];
+        $this->saldoAwal = $state['saldoAwal'];
+        $this->addMonth = $state['addMonth'];
+        $this->cleanAddMonth = $state['addMonth'];
+        $this->canUpdate = $state['canUpdate'];
 
-        $this->addMonth[$index] = $value;
         $this->calculateAll();
+        $this->dataLoaded = true;
 
-        try {
-            DB::beginTransaction();
-
-            $record = TmbdgtPlafond::find($this->existingId);
-            if (! $record) {
-                throw new \Exception('Data tidak ditemukan');
-            }
-
-            $i = $index + 1;
-            $record->update([
-                "v_bdgt_addmonth{$i}" => $value,
-                'v_bdgt_addtotal' => $this->totalPenambahan,
-            ]);
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Notification::make()
-                ->title('Gagal auto-save')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
+        $this->dispatch('plafond-data-loaded',
+            saldoAwal: $this->saldoAwal,
+            addMonth: $this->addMonth,
+            existingId: $this->existingId,
+            canInsert: $this->getCanInsertProperty(),
+            canUpdate: $this->canUpdate,
+        );
     }
 
     public function getTitle(): string
@@ -709,64 +456,6 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         if (! $this->dataLoaded) {
             return;
         }
-    }
-
-    protected function getTableQuery(): Builder
-    {
-        if (! $this->dataLoaded) {
-            $zeroCols = implode(', ', array_map(fn ($i) => "0 AS month_{$i}", range(0, 11)));
-
-            return TmbdgtPlafond::withoutGlobalScopes()
-                ->from(DB::raw("(
-                    SELECT 1 AS id, 'Saldo Awal' AS uraian, {$zeroCols}, 0 AS total
-                    UNION ALL
-                    SELECT 2 AS id, 'Penambahan' AS uraian, {$zeroCols}, 0 AS total
-                    UNION ALL
-                    SELECT 3 AS id, 'Saldo Akhir' AS uraian, {$zeroCols}, 0 AS total
-                ) as ".(new TmbdgtPlafond)->getTable()));
-        }
-
-        $table = (new TmbdgtPlafond)->getTable();
-
-        $saldoAwalCols = [];
-        $addCols = [];
-        $akhirCols = [];
-
-        for ($i = 1; $i <= 12; $i++) {
-            $idx = $i - 1;
-            $saldoAwalCols[] = "COALESCE(SUM(V_BDGT_SALDOMONTH{$i}), 0) AS month_{$idx}";
-            $addCols[] = "COALESCE(SUM(V_BDGT_ADDMONTH{$i}), 0) AS month_{$idx}";
-            $akhirCols[] = "COALESCE(SUM(V_BDGT_SALDOMONTH{$i} + V_BDGT_ADDMONTH{$i}), 0) AS month_{$idx}";
-        }
-
-        $saldoAwalSql = implode(', ', $saldoAwalCols);
-        $addSql = implode(', ', $addCols);
-        $akhirSql = implode(', ', $akhirCols);
-
-        $where = 'WHERE deleted_at IS NULL'
-            .' AND C_BDGT_ANGGARAN = ?'
-            .' AND C_ORG LIKE ?'
-            .' AND C_COA_DR LIKE ?'
-            .' AND C_PGM_VER = ?'
-            .' AND CONCAT(C_ORG_CONTR, "-", I_CONTR) = ?';
-
-        $sql1 = "SELECT 1 AS id, 'Saldo Awal' AS uraian, {$saldoAwalSql}, COALESCE(SUM(V_BDGT_SALDOTOTAL), 0) AS total FROM {$table} {$where}";
-        $sql2 = "SELECT 2 AS id, 'Penambahan' AS uraian, {$addSql}, COALESCE(SUM(V_BDGT_ADDTOTAL), 0) AS total FROM {$table} {$where}";
-        $sql3 = "SELECT 3 AS id, 'Saldo Akhir' AS uraian, {$akhirSql}, COALESCE(SUM(V_BDGT_SALDOTOTAL + V_BDGT_ADDTOTAL), 0) AS total FROM {$table} {$where}";
-
-        $fullSql = "({$sql1}) UNION ALL ({$sql2}) UNION ALL ({$sql3})";
-
-        $baseBindings = [
-            $this->tahunAnggaran,
-            $this->organisasi.'%',
-            $this->sandi.'%',
-            $this->pon,
-            $this->cOrgContr.'-'.$this->kontrak,
-        ];
-
-        return TmbdgtPlafond::withoutGlobalScopes()
-            ->from(DB::raw("({$fullSql}) as {$table}"))
-            ->addBinding(array_merge($baseBindings, $baseBindings, $baseBindings), 'from');
     }
 
     public function close(): void
