@@ -248,45 +248,6 @@
             Close
         </x-filament::button>
     </div>
-
-    {{-- Pop-up / Layar Tambahan --}}
-    <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <div class="border-b border-gray-200 px-6 py-4 dark:border-white/10">
-            <h3 class="text-base font-semibold text-gray-950 dark:text-white">Pop-up / Layar Tambahan</h3>
-        </div>
-        <div class="divide-y divide-gray-200 dark:divide-white/5">
-            <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <div class="flex items-start gap-3 sm:items-center">
-                    <x-filament::icon icon="heroicon-o-table-cells" class="h-6 w-6 shrink-0 text-gray-400" />
-                    <div>
-                        <p class="text-sm font-medium text-gray-950 dark:text-white">Rekap Gaji per Unit Organisasi / Eselon</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            Menampilkan rekap berdasarkan unit organisasi/eselon. Kolom: No., Kode & Nama Unit Organisasi, Besar Gaji, Pihak Lain, Yang Bersangkutan.
-                        </p>
-                    </div>
-                </div>
-                <x-filament::button color="gray" size="sm" wire:click="showRekapPerUnit" class="shrink-0 justify-center">
-                    Show
-                </x-filament::button>
-            </div>
-
-            <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <div class="flex items-start gap-3 sm:items-center">
-                    <x-filament::icon icon="heroicon-o-users" class="h-6 w-6 shrink-0 text-gray-400" />
-                    <div>
-                        <p class="text-sm font-medium text-gray-950 dark:text-white">Daftar Gaji Karyawan (Rincian)</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            Ditampilkan saat klik tombol "..." pada kolom Ri. Kolom: NIK, Nama Karyawan, Unit Org., Via/Bank, Lokasi, Besar Gaji, Pihak Lain, Yang Bersangkutan.
-                        </p>
-                    </div>
-                </div>
-                <x-filament::button color="gray" size="sm" disabled class="shrink-0 justify-center">
-                    Lihat
-                </x-filament::button>
-            </div>
-        </div>
-    </div>
-
     {{-- Modal: Rekap per Unit Organisasi / Eselon --}}
     <x-filament::modal id="rekap-per-unit" width="4xl">
         <x-slot name="heading">Rekap Gaji per Unit Organisasi / Eselon</x-slot>
