@@ -92,9 +92,12 @@
     </div>
 
     {{-- Rincian Plafond Anggaran (tabel native Filament, sudah dibuat backend) --}}
-    <div class="mt-6">
+   <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-white/10">
+        <h3 class="text-base font-semibold text-gray-950 dark:text-white"> Rincian Plafond Anggaran</h3>
         {{ $this->table }}
     </div>
+</div>
 
     {{-- Ringkasan Setelah Update --}}
     @php($ringkasan = $this->getRingkasan())
