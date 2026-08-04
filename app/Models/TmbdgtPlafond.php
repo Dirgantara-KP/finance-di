@@ -11,8 +11,9 @@ class TmbdgtPlafond extends Model
     use SoftDeletes;
 
     protected $table = 'tmbdgtplafond';
+
     /**
-     * @param Builder<Model> $q
+     * @param  Builder<Model>  $q
      */
     public function scopeForKontrak(Builder $q, string $orgContr, string $iContr): Builder
     {
