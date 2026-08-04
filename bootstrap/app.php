@@ -4,6 +4,8 @@ use App\Exceptions\DuplicateTransactionException;
 use App\Exceptions\ExportException;
 use App\Exceptions\InsufficientBalanceException;
 use App\Exceptions\InvalidPeriodException;
+use App\Http\Middleware\CacheControlHeaders;
+use App\Http\Middleware\FixServeUrl;
 use App\Http\Middleware\LogRequestResponse;
 use App\Http\Middleware\TrackRequestId;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -15,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\TooManyRequestsException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,6 +25,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Fix URL for `php artisan serve` (run early, before routing)
+        $middleware->prependToGroup('web', FixServeUrl::class);
+
+        // Cache-Control headers for pages without session storage
+        $middleware->appendToGroup('web', CacheControlHeaders::class);
+
         $middleware->api(
             prepend: [TrackRequestId::class, LogRequestResponse::class],
         );
@@ -163,7 +170,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->renderable(function (
-            TooManyRequestsException $e,
+            TooManyRequestsHttpException $e,
             Request $request,
         ) {
             if ($request->hasHeader('X-Livewire')) {

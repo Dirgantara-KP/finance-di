@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,6 +11,13 @@ class TmbdgtPlafond extends Model
     use SoftDeletes;
 
     protected $table = 'tmbdgtplafond';
+    /**
+     * @param Builder<Model> $q
+     */
+    public function scopeForKontrak(Builder $q, string $orgContr, string $iContr): Builder
+    {
+        return $q->where('c_org_contr', $orgContr)->where('i_contr', $iContr);
+    }
 
     protected $fillable = [
         'c_source',

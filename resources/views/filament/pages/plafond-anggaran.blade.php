@@ -75,7 +75,7 @@
 
             <div class="mt-4 flex justify-end">
                 <x-filament::button
-                    wire:click="muatData"
+                    wire:click="loadData"
                     icon="heroicon-m-magnifying-glass"
                     :disabled="! $this->allFiltersSelected"
                 >
@@ -107,98 +107,70 @@
                     </tr>
                 </thead>
                 <tbody wire:key="plafond-tbody-{{ $dataLoaded ? 'loaded' : 'empty' }}"
+                       wire:ignore
                        x-data="{
-                            addMonth: {{ json_encode(array_map('intval', $addMonth)) }},
-                            saldoAwal: {{ json_encode(array_map('intval', $saldoAwal)) }},
-                            saldoAkhir: {{ json_encode(array_map('intval', $saldoAkhir)) }},
-                            totals: {
-                                awal: {{ $totalSaldoAwal }},
-                                add: {{ $totalPenambahan }},
-                                akhir: {{ $totalSaldoAkhir }}
-                            },
-                            init() {
-                                const saved = sessionStorage.getItem('plafond_state');
-                                const hasPhpData = {{ $dataLoaded ? 'true' : 'false' }};
-                                if (hasPhpData) {
-                                    this.recalculate();
-                                    this.save();
-                                } else if (saved) {
-                                    try {
-                                        const d = JSON.parse(saved);
-                                        if (d.dataLoaded) {
-                                            this.addMonth = d.addMonth || this.addMonth;
-                                            this.saldoAwal = d.saldoAwal || this.saldoAwal;
-                                            this.saldoAkhir = d.saldoAkhir || this.saldoAkhir;
-                                            this.totals = d.totals || this.totals;
-                                            $wire.restoreState(d);
-                                        } else {
-                                            this.recalculate();
-                                        }
-                                    } catch (e) {
-                                        this.recalculate();
-                                    }
-                                } else {
-                                    this.recalculate();
-                                }
-                            },
-                            save() {
-                                sessionStorage.setItem('plafond_state', JSON.stringify({
-                                    addMonth: this.addMonth,
-                                    saldoAwal: this.saldoAwal,
-                                    saldoAkhir: this.saldoAkhir,
-                                    totals: this.totals,
-                                    dataLoaded: {{ $dataLoaded ? 'true' : 'false' }},
-                                    existingId: {{ json_encode($existingId) }},
-                                    canUpdate: {{ $canUpdate ? 'true' : 'false' }},
-                                }));
-                            },
-                            clearStorage() {
-                                sessionStorage.removeItem('plafond_state');
-                                this.addMonth = Array(12).fill(0);
-                                this.saldoAwal = Array(12).fill(0);
-                                this.saldoAkhir = Array(12).fill(0);
-                                this.totals = { awal: 0, add: 0, akhir: 0 };
-                            },
-                            recalculate() {
-                                let tAwal = 0, tAdd = 0, tAkhir = 0;
-                                for (let i = 0; i < 12; i++) {
-                                    const addVal = parseInt(this.addMonth[i]) || 0;
-                                    this.saldoAkhir[i] = this.saldoAwal[i] + addVal;
-                                    tAwal += this.saldoAwal[i];
-                                    tAdd += addVal;
-                                    tAkhir += this.saldoAkhir[i];
-                                }
-                                this.totals.awal = tAwal;
-                                this.totals.add = tAdd;
-                                this.totals.akhir = tAkhir;
-                                this.save();
-                            },
-                            format(n) {
-                                return Number(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
-                            },
-                            isNumKey(e) {
-                                 const allowed = ['Backspace','Delete','Tab','Enter','Escape',
-                                                  'ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
-                                 if (allowed.includes(e.key)) return true;
-                                 if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z'].includes(e.key)) return true;
-                                 return e.key >= '0' && e.key <= '9';
-                             },
-                             _autoTimer: null,
-                             autoSave() {
-                                 clearTimeout(this._autoTimer);
-                                 this._autoTimer = setTimeout(() => {
-                                     $wire.autoSavePenambangan();
-                                 }, 500);
-                             },
-                             sync(i) {
-                                  const val = parseInt(this.addMonth[i]) || 0;
-                                  this.addMonth[i] = val;
-                                  this.recalculate();
-                                  $wire.set('addMonth.' + i, val);
-                                  this.autoSave();
-                             }
-                         }"
-                         @clear-plafond-storage.window="clearStorage()">
+                           addMonth: {{ json_encode(array_map('intval', $addMonth)) }},
+                           saldoAwal: {{ json_encode(array_map('intval', $saldoAwal)) }},
+                           saldoAkhir: {{ json_encode(array_map('intval', $saldoAkhir)) }},
+                           totals: { awal: {{ $totalSaldoAwal }}, add: {{ $totalPenambahan }}, akhir: {{ $totalSaldoAkhir }} },
+                           canInsert: {{ $this->canInsert ? 'true' : 'false' }},
+                           canUpdate: {{ $this->canUpdate ? 'true' : 'false' }},
+                           editing: {},
+                           savedMap: {},
+                           get canEdit() { return this.canInsert || this.canUpdate; },
+                           init() { this.recalculate(); },
+                           recalculate() {
+                               let tAwal = 0, tAdd = 0, tAkhir = 0;
+                               for (let i = 0; i < 12; i++) {
+                                   const addVal = parseInt(this.addMonth[i]) || 0;
+                                   const awalVal = parseInt(this.saldoAwal[i]) || 0;
+                                   this.saldoAkhir[i] = awalVal + addVal;
+                                   tAwal += awalVal; tAdd += addVal; tAkhir += this.saldoAkhir[i];
+                               }
+                               this.totals.awal = tAwal; this.totals.add = tAdd; this.totals.akhir = tAkhir;
+                           },
+                           syncFromServer(d) {
+                               if (!d) return;
+                               this.saldoAwal = Array.from({ length: 12 }, (_, k) => parseInt(d.saldoAwal?.[k]) || 0);
+                               this.addMonth = Array.from({ length: 12 }, (_, k) => parseInt(d.addMonth?.[k]) || 0);
+                               this.canInsert = !!(d.canInsert);
+                               this.canUpdate = !!(d.canUpdate);
+                               this.editing = {};
+                               this.savedMap = {};
+                               this.recalculate();
+                           },
+                           format(n) { return (Number(n) || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 }); },
+                           isNumKey(e) {
+                               const allowed = ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                               if (allowed.includes(e.key)) return true;
+                               if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z'].includes(e.key)) return true;
+                                return (e.key >= '0' && e.key <= '9') || e.key.startsWith('Numpad') || e.code?.startsWith('Numpad');
+                           },
+                           beginEdit(i) {
+                               if (!this.canEdit) return;
+                               this.savedMap[i] = this.addMonth[i];
+                               this.editing[i] = true;
+                               this.$nextTick(() => {
+                                   const el = this.$refs['i' + i];
+                                   el.focus();
+                                   el.setSelectionRange(el.value.length, el.value.length);
+                               });
+                           },
+                           cancelEdit(i) {
+                               this.addMonth[i] = this.savedMap[i] ?? 0;
+                               this.recalculate();
+                               this.editing[i] = false;
+                           },
+                           commitEdit(i, rawVal) {
+                               if (!this.editing[i]) return;
+                               const val = parseInt(String(rawVal).replace(/\D/g, '')) || 0;
+                               this.addMonth[i] = val;
+                               this.recalculate();
+                               this.editing[i] = false;
+                               $wire.set('addMonth.' + i, val);
+                           }
+                       }"
+                       @plafond-data-loaded.window="syncFromServer($event.detail)">
                     <tr class="even:bg-gray-50 dark:even:bg-white/5">
                         <td class="px-3 py-3 text-center text-sm text-gray-500 dark:text-gray-400">1</td>
                         <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Saldo Awal</td>
@@ -213,28 +185,22 @@
                         <td class="px-3 py-3 text-sm text-gray-950 dark:text-white">Penambahan</td>
                         @for ($i = 0; $i < 12; $i++)
                             <td class="px-3 py-3 text-right text-sm tabular-nums min-w-25 {{ $monthBg[$i] }}
-                                        {{ $this->canUpdate ? 'text-gray-950 dark:text-white cursor-default' : 'text-gray-400 dark:text-gray-500 cursor-not-allowed' }}"
-                                :class="{ 'border-2!important border-blue-500!important': editing }"
-                                x-data="{ editing: false, saved: 0 }"
-                                @dblclick="if (!editing && {{ $this->canUpdate ? 'true' : 'false' }}) { saved = addMonth[{{ $i }}]; editing = true; $nextTick(() => { const el = $refs.i{{ $i }}; el.focus(); el.setSelectionRange(el.value.length, el.value.length) }) }">
+                                        {{ ($this->canInsert || $this->canUpdate) ? 'text-gray-950 dark:text-white' : 'text-gray-400 dark:text-gray-500 cursor-not-allowed' }}"
+                                :class="{ 'border-2 border-blue-500': editing[{{ $i }}] }"
+                                @dblclick="beginEdit({{ $i }})">
 
-                                <span x-show="!editing"
+                                <span x-show="!editing[{{ $i }}]"
                                       x-text="format(addMonth[{{ $i }}])"
-                                      class="block select-none pointer-events-none leading-5">
+                                      class="block leading-5">
                                 </span>
 
-                                <input x-show="editing"
+                                <input x-show="editing[{{ $i }}]"
                                        x-ref="i{{ $i }}"
                                        type="text"
-                                       :value="saved"
+                                       :value="savedMap[{{ $i }}] ?? 0"
                                        @keydown="if (!isNumKey($event)) $event.preventDefault()"
-                                       @keydown.enter.prevent="$el.blur()"
-                                       @keydown.escape.prevent="addMonth[{{ $i }}] = saved; recalculate(); editing = false"
-                                       @blur="editing = false;
-                                              const raw = $el.value.replace(/\D/g, '');
-                                              const val = parseInt(raw) || 0;
-                                              addMonth[{{ $i }}] = val;
-                                              recalculate(); sync({{ $i }})"
+                                       @keydown.escape.prevent="cancelEdit({{ $i }})"
+                                       @blur="commitEdit({{ $i }}, $el.value)"
                                        class="w-full text-right outline-none border-0 p-0 bg-transparent leading-5"
                                        inputmode="numeric">
                             </td>
@@ -328,17 +294,19 @@
         <x-filament::button
             color="warning"
             icon="heroicon-m-pencil-square"
-            :disabled="! $this->canUpdate"
+            :disabled="! $this->canUpdate || ! $this->isDirty || $this->isUpdating"
             wire:click="update"
+            wire:loading.attr.disabled
+            wire:target="update"
             class="justify-center"
         >
-            Update
+            <span wire:loading.remove wire:target="update">Update</span>
+            <span wire:loading wire:target="update">Updating...</span>
         </x-filament::button>
 
         <x-filament::button
             color="gray"
             icon="heroicon-m-arrow-uturn-left"
-            @click="sessionStorage.removeItem('plafond_state')"
             wire:click="cancel"
             class="justify-center"
         >
