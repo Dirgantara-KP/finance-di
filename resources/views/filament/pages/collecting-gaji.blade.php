@@ -3,18 +3,35 @@
     <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <div class="p-6">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {{-- 1. Tanggal Proses Gaji --}}
+               {{-- 1. Tanggal Proses Gaji --}}
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Tanggal Proses Gaji <span class="text-danger-500">*</span>
+                        Tanggal Proses Gaji <span class="text-red-500">*</span>
                     </label>
-                    <x-filament::input.wrapper>
-                        <x-filament::input
-                            type="date"
-                            wire:model.live="tanggalProsesGaji"
-                            class="h-10"
-                        />
-                    </x-filament::input.wrapper>
+                    <div
+                        x-data="{
+                            init() {
+                                flatpickr(this.$refs.dateInput, {
+                                    dateFormat: 'Y-m-d',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    defaultDate: @js($tanggalProsesGaji),
+                                    onChange: (selectedDates, dateStr) => {
+                                        $wire.tanggalProsesGaji = dateStr;
+                                    },
+                                });
+                            }
+                        }"
+                    >
+                        <x-filament::input.wrapper>
+                            <x-filament::input
+                                type="text"
+                                x-ref="dateInput"
+                                placeholder="dd/mm/yyyy"
+                                class="h-10"
+                            />
+                        </x-filament::input.wrapper>
+                    </div>
                 </div>
 
                 {{-- 2, 3, 4. No. Bukti Gaji + Cari + Pilih --}}
@@ -110,7 +127,7 @@
 
         <div class="max-h-[420px] overflow-x-auto overflow-y-auto">
             <table class="w-full min-w-[860px]">
-                <thead class="sticky top-0 bg-gray-100 dark:bg-white/10">
+                <thead class="sticky top-0 z-10 bg-gray-100 dark:bg-white/10">
                     <tr class="border-b border-gray-200 dark:border-white/10">
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">No</th>
                         <th class="w-14 px-3 py-3.5 text-center text-sm font-semibold text-gray-950 dark:text-white">Ri</th>
@@ -153,7 +170,7 @@
                 </tbody>
                 @if (count($rekapCostCenter) > 0)
                     <tfoot>
-                        <tr class="border-t border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
+                            <tr class="border-t border-gray-200 bg-gray-200 dark:border-white/10 dark:bg-white/20">
                             <td colspan="4" class="px-3 py-3 text-right text-sm font-semibold text-gray-950 dark:text-white">TOTAL</td>
                             <td class="px-3 py-3 text-right text-sm font-semibold tabular-nums text-gray-950 dark:text-white">
                                 {{ number_format(collect($rekapCostCenter)->sum('besar_gaji'), 0, ',', '.') }}
@@ -268,4 +285,8 @@
 
         @include('filament.modals.collecting-gaji.gaji-non-corporate')
     </x-filament::modal>
+     @once
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js" defer></script>
+    @endonce
 </x-filament-panels::page>
