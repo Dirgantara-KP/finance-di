@@ -54,9 +54,9 @@ class CollectingGaji extends Page
     public bool $dataLoaded = false;
 
     public function mount(): void
-    {
-        //
-    }
+{
+    
+}
 
     /**
      * Membuka pencarian Nomor Bukti Gaji yang sudah tersedia.
