@@ -56,6 +56,7 @@ class CollectingGaji extends Page
     public function mount(): void
 {
     
+       
 }
 
     /**

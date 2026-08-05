@@ -268,16 +268,14 @@
     {{-- Modal: Rekap per Unit Organisasi / Eselon --}}
     <x-filament::modal id="rekap-per-unit" width="4xl">
         <x-slot name="heading">Rekap Gaji per Unit Organisasi / Eselon</x-slot>
-
         @include('filament.modals.collecting-gaji.rekap-per-unit')
     </x-filament::modal>
 
-    {{-- Modal: Daftar Gaji Karyawan (Rincian) --}}
-    <x-filament::modal id="daftar-gaji-karyawan" width="5xl">
-        <x-slot name="heading">Daftar Gaji Karyawan (Rincian)</x-slot>
-
-        @include('filament.modals.collecting-gaji.daftar-gaji-karyawan')
-    </x-filament::modal>
+    <x-filament::modal id="daftar-gaji-karyawan" width="5xl" icon="heroicon-o-user" icon-color="primary">
+       <x-slot name="heading">Daftar Gaji Karyawan {{ $costCenterAktif ?? '' }} – {{ $namaDivisiAktif ?? '' }}</x-slot>
+       <x-slot name="description">Rincian pembayaran gaji untuk unit organisasi yang dipilih</x-slot>
+       @include('filament.modals.collecting-gaji.daftar-gaji-karyawan')
+   </x-filament::modal>
 
     {{-- Modal: Jumlah Gaji Non Corporate --}}
     <x-filament::modal id="gaji-non-corporate" width="4xl">
