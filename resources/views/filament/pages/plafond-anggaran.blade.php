@@ -117,7 +117,9 @@
                 }
                 return false;
             },
+            get displayedChange() { return this.dirty ? this.totals.add : this.lastChange; },
             init() { this.recalculate(); },
+            lastChange: {{ (int) $lastAppliedChange }},
             recalculate() {
                 let tAwal = 0, tAdd = 0, tAkhir = 0;
                 for (let i = 0; i < 12; i++) {
@@ -133,6 +135,7 @@
                 this.saldoAwal = Array.from({ length: 12 }, (_, k) => parseInt(d.saldoAwal?.[k]) || 0);
                 this.addMonth = Array.from({ length: 12 }, (_, k) => parseInt(d.addMonth?.[k]) || 0);
                 this.saldoAkhir = Array.from({ length: 12 }, (_, k) => parseInt(d.saldoAkhir?.[k]) || 0);
+                this.lastChange = parseInt(d.lastChange) || 0;
                 this.baseAkhir = [...this.saldoAkhir];
                 this.cleanAddMonth = [...this.addMonth];
                 this.canInsert = !!(d.canInsert);
@@ -163,6 +166,11 @@
                 this.addMonth[i] = this.savedMap[i] ?? 0;
                 this.recalculate();
                 this.editing[i] = false;
+            },
+            liveUpdate(i, rawVal) {
+                const val = parseInt(String(rawVal).replace(/\D/g, '')) || 0;
+                this.addMonth[i] = val;
+                this.recalculate();
             },
             commitEdit(i, rawVal) {
                 if (!this.editing[i]) return;
@@ -232,6 +240,7 @@
                                            x-ref="i{{ $i }}"
                                            type="text"
                                            :value="savedMap[{{ $i }}] ?? 0"
+                                           @input="liveUpdate({{ $i }}, $el.value)"
                                            @keydown="if (!isNumKey($event)) $event.preventDefault()"
                                            @keydown.escape.prevent="cancelEdit({{ $i }})"
                                            @blur="commitEdit({{ $i }}, $el.value)"
@@ -282,7 +291,7 @@
                     />
                     <div>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Perubahan Total</p>
-                        <p class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white">
+                        <p class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white" x-text="format(totals.akhir - totals.awal)">
                             {{ number_format($ringkasan['perubahan_total'], 0, ',', '.') }}
                         </p>
                     </div>
@@ -328,12 +337,12 @@
             <x-filament::button
                 color="warning"
                 icon="heroicon-m-pencil-square"
-                x-bind:disabled="!canUpdate || !dirty || busy"
                 x-on:click="submitUpdate()"
+                x-effect="$el.disabled = !canUpdate || !dirty || busy"
                 class="justify-center"
             >
                 <span x-show="!busy">Update</span>
-                <span x-show="busy" x-cloak>Updating...</span>
+                <span x-show="busy" x-cloak>Menyimpan...</span>
             </x-filament::button>
 
             <x-filament::button

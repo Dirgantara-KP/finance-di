@@ -12,7 +12,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
-use Livewire\Attributes\Url;
 
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
 {
@@ -36,19 +35,14 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->service = $service;
     }
 
-    #[Url(except: null, keep: true)]
     public $tahunAnggaran;
 
-    #[Url(except: null, keep: true)]
     public $organisasi;
 
-    #[Url(except: null, keep: true)]
     public $sandi;
 
-    #[Url(except: null, keep: true)]
     public $pon;
 
-    #[Url(except: null, keep: true)]
     public $kontrak;
 
     public $tahunOptions = [];
@@ -93,6 +87,8 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public $cOrgContr = null;
 
+    public int $lastAppliedChange = 0;
+
     /** @var array<int,int> snapshot addMonth saat load — baseline untuk dirty tracking */
     public array $cleanAddMonth = [];
 
@@ -109,7 +105,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->ponOptions = $options['pon'];
         $this->kontrakOptions = $options['kontrak'];
 
-        $this->sanitizeUrlFilters();
+        $this->restoreFilters();
 
         $this->resetMonthData();
 
@@ -125,35 +121,6 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public function getAllFiltersSelectedProperty(): bool
     {
         return $this->tahunAnggaran && $this->organisasi && $this->sandi && $this->pon && $this->kontrak;
-    }
-
-    /**
-     * Filter datang dari URL (#[Url]) — bisa basi (opsi dihapus dari master).
-     * Nilai yang tak lagi jadi anggota opsi direset, biar load data tak pakai kunci sampah.
-     */
-    private function sanitizeUrlFilters(): void
-    {
-        if ($this->tahunAnggaran !== null && ! in_array((int) $this->tahunAnggaran, $this->tahunOptions, true)) {
-            $this->tahunAnggaran = now()->year;
-        }
-
-        if ($this->organisasi !== null && ! array_key_exists($this->organisasi, $this->organisasiOptions)) {
-            $this->organisasi = null;
-        }
-
-        if ($this->sandi !== null && ! array_key_exists($this->sandi, $this->sandiOptions)) {
-            $this->sandi = null;
-        }
-
-        if ($this->pon !== null && ! array_key_exists($this->pon, $this->ponOptions)) {
-            $this->pon = null;
-        }
-
-        $this->loadContractOptions();
-
-        if ($this->kontrak !== null && ! array_key_exists($this->kontrak, $this->kontrakOptions)) {
-            $this->kontrak = null;
-        }
     }
 
     public function getCanInsertProperty(): bool
@@ -209,6 +176,53 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->kontrak = null;
         $this->resetAll();
         $this->loadContractOptions();
+        $this->persistFilters();
+    }
+
+    private function persistFilters(): void
+    {
+        session(['plafond.filters' => [
+            'tahunAnggaran' => $this->tahunAnggaran,
+            'organisasi' => $this->organisasi,
+            'sandi' => $this->sandi,
+            'pon' => $this->pon,
+            'kontrak' => $this->kontrak,
+        ]]);
+    }
+
+    private function restoreFilters(): void
+    {
+        $filters = session('plafond.filters', []);
+
+        $this->tahunAnggaran = $filters['tahunAnggaran'] ?? $this->tahunAnggaran;
+        $this->organisasi = $filters['organisasi'] ?? $this->organisasi;
+        $this->sandi = $filters['sandi'] ?? $this->sandi;
+        $this->pon = $filters['pon'] ?? $this->pon;
+        $this->kontrak = $filters['kontrak'] ?? $this->kontrak;
+
+        if ($this->tahunAnggaran !== null && ! in_array((int) $this->tahunAnggaran, $this->tahunOptions, true)) {
+            $this->tahunAnggaran = now()->year;
+        }
+
+        if ($this->organisasi !== null && ! array_key_exists($this->organisasi, $this->organisasiOptions)) {
+            $this->organisasi = null;
+        }
+
+        if ($this->sandi !== null && ! array_key_exists($this->sandi, $this->sandiOptions)) {
+            $this->sandi = null;
+        }
+
+        if ($this->pon !== null && ! array_key_exists($this->pon, $this->ponOptions)) {
+            $this->pon = null;
+        }
+
+        if ($this->organisasi) {
+            $this->loadContractOptions();
+        }
+
+        if ($this->kontrak !== null && ! array_key_exists($this->kontrak, $this->kontrakOptions)) {
+            $this->kontrak = null;
+        }
     }
 
     public function loadContractOptions(): void
@@ -221,21 +235,25 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public function updatedTahunAnggaran(): void
     {
         $this->resetAll();
+        $this->persistFilters();
     }
 
     public function updatedSandi(): void
     {
         $this->resetAll();
+        $this->persistFilters();
     }
 
     public function updatedPon(): void
     {
         $this->resetAll();
+        $this->persistFilters();
     }
 
     public function updatedKontrak(): void
     {
         $this->resetAll();
+        $this->persistFilters();
     }
 
     /** @return array<string, string|string[]> */
@@ -252,7 +270,9 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function loadData(): void
     {
+        $this->lastAppliedChange = 0;
         $this->validate();
+        $this->refreshFromDb();
 
         try {
             $state = $this->service->load([
@@ -272,11 +292,30 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->applyLoadedState($state);
     }
 
+    private function refreshFromDb(): void
+    {
+        try {
+            $state = $this->service->load([
+                'tahun' => $this->tahunAnggaran,
+                'org' => $this->organisasi,
+                'sandi' => $this->sandi,
+                'pon' => $this->pon,
+                'kontrak' => $this->kontrak,
+            ]);
+        } catch (\Throwable) {
+            $this->resetMonthData();
+            throw new \RuntimeException('Gagal memuat data plafond');
+        }
+
+        $this->resetMonthValuesOnly();
+        $this->applyLoadedState($state);
+    }
+
     public function getRingkasan(): array
     {
         return [
             'saldo_akhir_baru' => $this->totalSaldoAkhir,
-            'perubahan_total' => $this->totalPenambahan,
+            'perubahan_total' => $this->lastAppliedChange,   
             'saldo_awal' => $this->totalSaldoAwal,
         ];
     }
@@ -299,6 +338,8 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->validate();
 
         try {
+            $appliedTotal = array_sum($this->addMonth);
+
             $this->service->insert([
                 'tahun' => $this->tahunAnggaran,
                 'org' => $this->organisasi,
@@ -308,8 +349,8 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
                 'add_month' => $this->addMonth,
             ]);
 
-            $this->loadData();
-
+            $this->lastAppliedChange = $appliedTotal;
+            $this->refreshFromDb();
             $this->dataSaved = true;
 
             Notification::make()
@@ -318,35 +359,20 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
                 ->success()
                 ->send();
         } catch (DuplicateTransactionException) {
-            $this->loadData();
-
-            Notification::make()
-                ->title('Data sudah ada')
-                ->body('Silakan gunakan tombol Update untuk mengubah data.')
-                ->info()
-                ->send();
+            $this->refreshFromDb();
+            Notification::make()->title('Data sudah ada')->body('Silakan gunakan tombol Update untuk mengubah data.')->info()->send();
         } catch (ForbiddenActionException $e) {
-            Notification::make()
-                ->title('Aksi ditolak')
-                ->body($e->getMessage())
-                ->warning()
-                ->send();
+            Notification::make()->title('Aksi ditolak')->body($e->getMessage())->warning()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()
-                ->title('Gagal menyimpan data')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            Notification::make()->title('Gagal menyimpan data')->body($e->getMessage())->danger()->send();
             throw $e;
         }
     }
 
     public function update(?array $addMonth = null): void
     {
-        if ($this->isUpdating) {
-            return;
-        }
+        if ($this->isUpdating) return;
 
         if ($addMonth !== null) {
             $this->addMonth = $addMonth;
@@ -356,31 +382,26 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
         if (! $this->existingId) {
             $this->loadData();
-
             return;
         }
 
         if (! $this->isDirty) {
-            Notification::make()
-                ->title('Tidak ada perubahan')
-                ->body('Edit cell Penambahan terlebih dahulu sebelum klik Update.')
-                ->info()
-                ->send();
-
+            Notification::make()->title('Tidak ada perubahan')->body('Edit cell Penambahan terlebih dahulu sebelum klik Update.')->info()->send();
             return;
         }
 
         $this->isUpdating = true;
 
         try {
+            $appliedTotal = array_sum($this->addMonth); // snapshot sebelum di-reset
+
             $this->service->update((int) $this->existingId, $this->addMonth);
 
-            Notification::make()
-                ->title('Data Plafond Anggaran berhasil diupdate')
-                ->success()
-                ->send();
+            $this->lastAppliedChange = $appliedTotal;
+            $this->refreshFromDb(); // TIDAK mereset lastAppliedChange
+            $this->dataSaved = true;
 
-            $this->loadData();
+            Notification::make()->title('Data Plafond Anggaran berhasil diupdate')->success()->send();
         } catch (ForbiddenActionException $e) {
             Notification::make()->title('Aksi ditolak')->body($e->getMessage())->warning()->send();
         } catch (\Throwable $e) {
@@ -404,6 +425,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->cPgmSub = null;
         $this->cOrgContr = null;
         $this->resetAll();
+        session()->forget('plafond.filters');
     }
 
     public function cancel(): void
@@ -437,6 +459,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             existingId: $this->existingId,
             canInsert: $this->getCanInsertProperty(),
             canUpdate: $this->canUpdate,
+            lastChange: $this->lastAppliedChange,
         );
     }
 
