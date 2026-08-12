@@ -35,19 +35,17 @@ final class PlafondAnggaranService
         $cOrgContr = $kontrak->c_org_contr ?? $f['org'];
 
         $record = $this->repo->findExisting($this->lookupDto($f, $cOrgContr));
-
         if ($record !== null) {
             $monthly = $this->repo->monthlyState($record);
-            // Spec Portal Finance.md L205: v_bdgt_saldomonth = Saldo Awal + Penambahan (= saldo akhir).
-            // DB tak simpan saldo awal eksplisit → turunkan: SALDO − Penambahan.
             $saldoAkhirDb = $monthly['saldoAwal'];
-            $addMonth = $monthly['addMonth'];
+            $cumulativeAdd = $monthly['addMonth'];
             $saldoAwal = array_map(
                 static fn (int $akhir, int $add): int => max(0, $akhir - $add),
                 $saldoAkhirDb,
-                $addMonth,
+                $cumulativeAdd,
             );
             $saldoAkhir = $saldoAkhirDb;
+            $addMonth = array_fill(0, 12, 0);
         } else {
             $saldoAwal = array_fill(0, 12, 0);
             $addMonth = array_fill(0, 12, 0);
@@ -95,6 +93,8 @@ final class PlafondAnggaranService
         }
 
         $addMonth = $this->normalizeMonthly($data['add_month']);
+        $saldoMonth = $addMonth;
+        $addMonth = array_fill(0, 12, 0);
 
         $payload = new PlafondAnggaranDto(
             tahun: (string) $data['tahun'],
@@ -103,7 +103,7 @@ final class PlafondAnggaranService
             pon: $data['pon'],
             orgContr: $cOrgContr,
             iContr: $data['kontrak'],
-            saldoMonth: $addMonth,
+            saldoMonth: $saldoMonth,
             addMonth: $addMonth,
             pgm: $pon->c_pgm,
             pgmSub: $pon->c_pgm_sub,
@@ -117,24 +117,43 @@ final class PlafondAnggaranService
     }
 
     /**
-     * @param  array<int,mixed>  $saldoMonth
      * @param  array<int,mixed>  $addMonth
      */
-    public function update(int $id, array $saldoMonth, array $addMonth): void
+    public function update(int $id, array $addMonth): void
     {
-        DB::transaction(function () use ($id, $saldoMonth, $addMonth) {
+        DB::transaction(function () use ($id, $addMonth) {
             $record = $this->repo->findForUpdate($id);
             if (! $record) {
                 throw new ForbiddenActionException(action: 'update plafond (record tidak ditemukan)');
             }
-
             if (! $this->canUpdate((string) $record->c_bdgt_anggaran, (string) $record->c_bdgt_contrstat)) {
                 throw new ForbiddenActionException(action: 'update plafond (tahun lampau hanya view)');
             }
 
+            $addMonth = $this->normalizeMonthly($addMonth);
+
+            $current = $this->repo->monthlyState($record);
+            $curSaldoAkhir = $current['saldoAwal'];
+            $curCumulativeAdd = $current['addMonth'];
+            $newSaldoAkhir = [];
+            $newCumulativeAdd = [];
+
+            for ($i = 0; $i < 12; $i++) {
+                $awal = max(0, ($curSaldoAkhir[$i] ?? 0) - ($curCumulativeAdd[$i] ?? 0));
+                $add = max(0, $addMonth[$i] ?? 0);
+
+                if ($awal === 0) {
+                    $newSaldoAkhir[$i] = $add;
+                    $newCumulativeAdd[$i] = 0;
+                } else {
+                    $newSaldoAkhir[$i] = $curSaldoAkhir[$i] + $add;
+                    $newCumulativeAdd[$i] = $curCumulativeAdd[$i] + $add;
+                }
+            }
+
             $this->repo->updateRecord($record, new PlafondAnggaranDto(
-                saldoMonth: $this->buildSaldoAkhir($saldoMonth, $addMonth),
-                addMonth: $this->normalizeMonthly($addMonth),
+                saldoMonth: $newSaldoAkhir,
+                addMonth: $newCumulativeAdd,
             ));
         });
     }
