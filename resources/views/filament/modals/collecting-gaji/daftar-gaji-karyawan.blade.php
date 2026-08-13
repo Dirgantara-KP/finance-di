@@ -1,22 +1,20 @@
-{{-- TODO(backend): isi tabel ini dari query daftar gaji karyawan (rincian) per cost center --}}
-
 {{-- Info cards: Tanggal Proses, No. Bukti/Jurnal, Bank/Kas, Lokasi Pembayaran --}}
 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <div class="rounded-lg border border-gray-200 px-3 py-2.5 dark:border-white/10">
         <p class="text-xs text-gray-500 dark:text-gray-400">Tanggal Proses</p>
-        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $tanggalProses ?? '-' }}</p>
+        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $tanggalProsesGaji ?? '-' }}</p>
     </div>
     <div class="rounded-lg border border-gray-200 px-3 py-2.5 dark:border-white/10">
         <p class="text-xs text-gray-500 dark:text-gray-400">No. Bukti/Jurnal</p>
-        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $noBukti ?? '-' }}</p>
+        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $noBuktiGaji ?? '-' }}</p>
     </div>
     <div class="rounded-lg border border-gray-200 px-3 py-2.5 dark:border-white/10">
         <p class="text-xs text-gray-500 dark:text-gray-400">Bank/Kas</p>
-        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $bank ?? '-' }}</p>
+        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $bankKas ?? '-' }}</p>
     </div>
     <div class="rounded-lg border border-gray-200 px-3 py-2.5 dark:border-white/10">
         <p class="text-xs text-gray-500 dark:text-gray-400">Lokasi Pembayaran</p>
-        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $lokasiPembayaran ?? '-' }}</p>
+        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $lokasi ?? '-' }}</p>
     </div>
 </div>
 
@@ -102,6 +100,6 @@
 
 {{-- Tombol aksi: Tutup / Kembali ke Rekap Gaji --}}
 <div class="mt-5 flex justify-end gap-2">
-    <x-filament::button color="gray" x-on:click="close">Tutup</x-filament::button>
+    <x-filament::button color="gray" x-on:click="$dispatch('close-modal', { id: 'daftar-gaji-karyawan' })">Tutup</x-filament::button>
     <x-filament::button color="primary" wire:click="kembaliKeRekapGaji">Kembali ke Rekap Gaji</x-filament::button>
 </div>
