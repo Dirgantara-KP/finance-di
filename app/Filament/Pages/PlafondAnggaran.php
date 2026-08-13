@@ -315,7 +315,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     {
         return [
             'saldo_akhir_baru' => $this->totalSaldoAkhir,
-            'perubahan_total' => $this->lastAppliedChange,   
+            'perubahan_total' => $this->lastAppliedChange,
             'saldo_awal' => $this->totalSaldoAwal,
         ];
     }
@@ -372,7 +372,9 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     public function update(?array $addMonth = null): void
     {
-        if ($this->isUpdating) return;
+        if ($this->isUpdating) {
+            return;
+        }
 
         if ($addMonth !== null) {
             $this->addMonth = $addMonth;
@@ -382,11 +384,13 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
         if (! $this->existingId) {
             $this->loadData();
+
             return;
         }
 
         if (! $this->isDirty) {
             Notification::make()->title('Tidak ada perubahan')->body('Edit cell Penambahan terlebih dahulu sebelum klik Update.')->info()->send();
+
             return;
         }
 
