@@ -37,14 +37,19 @@ final class PlafondAnggaranService
         $record = $this->repo->findExisting($this->lookupDto($f, $cOrgContr));
         if ($record !== null) {
             $monthly = $this->repo->monthlyState($record);
-            $saldoAkhirDb = $monthly['saldoAwal'];
-            $cumulativeAdd = $monthly['addMonth'];
-            $saldoAwal = array_map(
-                static fn (int $akhir, int $add): int => max(0, $akhir - $add),
-                $saldoAkhirDb,
+            // ponytail: repo monthlyState returns v_bdgt_saldomonth under key 'saldoAkhir',
+            // but that column actually stores the opening plafond (Saldo Awal). Misnomer kept
+            // to avoid wider rename; read carefully.
+            $saldoAwalDb = $monthly['saldoAkhir'];   // v_bdgt_saldomonth  = Saldo Awal (opening)
+            $cumulativeAdd = $monthly['addMonth'];   // v_bdgt_addmonth    = Penambahan kumulatif (stored)
+            $saldoAwal = $saldoAwalDb;
+            // spec: Saldo Akhir = Saldo Awal + Penambahan (matches frontend blade L134)
+            $saldoAkhir = array_map(
+                static fn (int $awal, int $add): int => max(0, $awal + $add),
+                $saldoAwalDb,
                 $cumulativeAdd,
             );
-            $saldoAkhir = $saldoAkhirDb;
+            // form Penambahan column = fresh delta buffer (0 after load)
             $addMonth = array_fill(0, 12, 0);
         } else {
             $saldoAwal = array_fill(0, 12, 0);
@@ -133,26 +138,28 @@ final class PlafondAnggaranService
             $addMonth = $this->normalizeMonthly($addMonth);
 
             $current = $this->repo->monthlyState($record);
-            $curSaldoAkhir = $current['saldoAwal'];
-            $curCumulativeAdd = $current['addMonth'];
-            $newSaldoAkhir = [];
+            $curSaldoAwal = $current['saldoAkhir'];  // v_bdgt_saldomonth = Saldo Awal (opening)
+            $curCumulativeAdd = $current['addMonth']; // v_bdgt_addmonth   = Penambahan kumulatif (stored)
+            $newSaldoAwal = [];
             $newCumulativeAdd = [];
 
             for ($i = 0; $i < 12; $i++) {
-                $awal = max(0, ($curSaldoAkhir[$i] ?? 0) - ($curCumulativeAdd[$i] ?? 0));
                 $add = max(0, $addMonth[$i] ?? 0);
+                $awal = $curSaldoAwal[$i] ?? 0;
 
                 if ($awal === 0) {
-                    $newSaldoAkhir[$i] = $add;
+                    // first allocation: input becomes opening, additions stay 0
+                    $newSaldoAwal[$i] = $add;
                     $newCumulativeAdd[$i] = 0;
                 } else {
-                    $newSaldoAkhir[$i] = $curSaldoAkhir[$i] + $add;
-                    $newCumulativeAdd[$i] = $curCumulativeAdd[$i] + $add;
+                    // existing opening: accumulate delta into stored cumulative
+                    $newSaldoAwal[$i] = $awal;
+                    $newCumulativeAdd[$i] = ($curCumulativeAdd[$i] ?? 0) + $add;
                 }
             }
 
             $this->repo->updateRecord($record, new PlafondAnggaranDto(
-                saldoMonth: $newSaldoAkhir,
+                saldoMonth: $newSaldoAwal,
                 addMonth: $newCumulativeAdd,
             ));
         });

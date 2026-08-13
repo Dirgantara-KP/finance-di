@@ -23,16 +23,16 @@ final class TmbdgtPlafondRepository
             ->first();
     }
 
-    /** @return array{saldoAwal: array<int, int>, addMonth: array<int, int>} */
+    /** @return array{saldoAkhir: array<int, int>, addMonth: array<int, int>} */
     public function monthlyState(TmbdgtPlafond $record): array
     {
-        $saldoAwal = $addMonth = [];
+        $saldoAkhir = $addMonth = [];
         for ($i = 1; $i <= 12; $i++) {
-            $saldoAwal[$i - 1] = (int) ($record->{'v_bdgt_saldomonth'.$i} ?? 0);
+            $saldoAkhir[$i - 1] = (int) ($record->{'v_bdgt_saldomonth'.$i} ?? 0);
             $addMonth[$i - 1] = (int) ($record->{'v_bdgt_addmonth'.$i} ?? 0);
         }
 
-        return ['saldoAwal' => $saldoAwal, 'addMonth' => $addMonth];
+        return ['saldoAkhir' => $saldoAkhir, 'addMonth' => $addMonth];
     }
 
     public function insertRecord(PlafondAnggaranDto $p): TmbdgtPlafond
