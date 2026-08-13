@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Filament\Pages;
-
+use App\Exports\PlafondAnggaranExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Exceptions\DuplicateTransactionException;
 use App\Exceptions\ForbiddenActionException;
 use App\Services\PlafondAnggaranService;
@@ -468,11 +469,64 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         return 'Plafond Anggaran';
     }
 
-    public function exportExcel(): void
+    public function exportExcel()
     {
         if (! $this->dataLoaded) {
+            Notification::make()
+                ->title('Data belum dimuat')
+                ->body('Silakan muat data terlebih dahulu.')
+                ->warning()
+                ->send();
+
             return;
         }
+
+        $data = [];
+
+        $data[] = [
+            'Saldo Awal',
+            ...array_map(
+                fn ($value) => (int) $value,
+                $this->saldoAwal
+            ),
+            array_sum($this->saldoAwal),
+        ];
+
+        $data[] = [
+            'Penambahan',
+            ...array_map(
+                fn ($value) => (int) $value,
+                $this->addMonth
+            ),
+            array_sum($this->addMonth),
+        ];
+
+        $data[] = [
+            'Saldo Akhir',
+            ...array_map(
+                fn ($value) => (int) $value,
+                $this->saldoAkhir
+            ),
+            array_sum($this->saldoAkhir),
+        ];
+
+        $info = [
+            'tahun' => $this->tahunAnggaran,
+            'organisasi' => $this->organisasi,
+            'sandi' => $this->sandi,
+            'pon' => $this->pon,
+            'kontrak' => $this->kontrak,
+            'namaProgram' => $this->namaProgram,
+            'namaSandi' => $this->namaSandi,
+            'printedBy' => 'System',
+        ];
+
+        $filename = 'Plafond_Anggaran_' . $this->tahunAnggaran . '.xlsx';
+
+        return Excel::download(
+            new PlafondAnggaranExport($data, $info),
+            $filename
+        );
     }
 
     public function close(): void
