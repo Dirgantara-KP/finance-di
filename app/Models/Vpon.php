@@ -17,6 +17,7 @@ class Vpon extends Model
         'c_pgm_ver',
         'c_pgm_veract',
         'c_pgm_vergrp',
+        'e_pgm_vergrp',
         'e_pgm',
         'c_org_core',
         'c_cost',

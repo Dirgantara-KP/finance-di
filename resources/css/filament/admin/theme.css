@@ -9,9 +9,28 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
-@source '../../../../app/Filament/**/*';
-@source '../../../../resources/views/filament/**/*';
+
+/* Border pemisah sidebar & topbar dengan konten */
+.fi-sidebar {
+    border-inline-end: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.dark .fi-sidebar {
+    border-inline-end-color: rgb(255 255 255 / 0.1);
+}
+
+.fi-topbar {
+    border-bottom: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.dark .fi-topbar {
+    border-bottom-color: rgb(255 255 255 / 0.1);
+}
+
+/* Sembunyikan judul asli di badan konten karena sudah dipindah ke topbar */
+.fi-header-heading {
+    display: none;
+}
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
-

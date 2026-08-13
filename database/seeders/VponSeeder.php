@@ -9,35 +9,46 @@ class VponSeeder extends Seeder
 {
     public function run(): void
     {
-        $data = [
-            ['c_pgm' => '15', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '154', 'e_pgm' => 'SERVICES - DESIGN, INSTALL , IMPLEMENTASI MAINT. & SUPPORT JARINGAN COMPUTER.', 'c_org_core' => 'IT', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => 'MP', 'c_pgm_sub' => 'BNC', 'c_pgm_ver' => 'FA1', 'e_pgm' => 'MANUFACTURING PART  BONDING', 'c_org_core' => 'FK', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => '35', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '35D', 'e_pgm' => 'PELAYANAN MAN POWER', 'c_org_core' => 'TS', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => '35', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '35E', 'e_pgm' => 'PELAYANAN PENGETESAN', 'c_org_core' => 'TS', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => 'EQ', 'c_pgm_sub' => 'EQL', 'c_pgm_ver' => 'TF2', 'e_pgm' => 'HEAVY/LIGHT  EQUIPMENT UNTUK INDUSTRI PENERBANGAN', 'c_org_core' => 'TL', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => '30', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '30B', 'e_pgm' => 'MANUFACTURING MAN POWER', 'c_org_core' => 'TL', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => 'EQ', 'c_pgm_sub' => 'EQL', 'c_pgm_ver' => 'TF7', 'e_pgm' => 'HEAVY/LIGHT  EQUIPMENT UNTUK INDUSTRI PERTAMBANGAN', 'c_org_core' => 'TL', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => '11', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '11D', 'e_pgm' => 'PELAYANAN RAWAT JALAN UMUM', 'c_org_core' => 'MC', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => 'MP', 'c_pgm_sub' => 'MCH', 'c_pgm_ver' => 'FB6', 'e_pgm' => 'MANUFACTURING PART  MACHINING  UNTUK INDUSTRI ELECTRONICS', 'c_org_core' => 'FK', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => 'MP', 'c_pgm_sub' => 'MCH', 'c_pgm_ver' => 'FB7', 'e_pgm' => 'MANUFACTURING PART  MACHINING  UNTUK INDUSTRI TRANSPORTASI', 'c_org_core' => 'FK', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => 'MP', 'c_pgm_sub' => 'SMW', 'c_pgm_ver' => 'FC2', 'e_pgm' => 'MANUFACTURING PART  SHEET METAL & WELDING  UNTUK INDUSTRI POWER UTILITIES', 'c_org_core' => 'FK', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => 'MP', 'c_pgm_sub' => 'SMW', 'c_pgm_ver' => 'FC3', 'e_pgm' => 'MANUFACTURING PART  SHEET METAL & WELDING  UNTUK INDUSTRI TEXTILE', 'c_org_core' => 'FK', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => 'MP', 'c_pgm_sub' => 'SMW', 'c_pgm_ver' => 'FC6', 'e_pgm' => 'MANUFACTURING PART  SHEET METAL & WELDING  UNTUK INDUSTRI ELECTRONICS', 'c_org_core' => 'FK', 'c_cost' => '10E', 'e_cost' => 'HASIL PENJUALAN SP & COMP NON PESAWAT', 'c_pgm_vergrp' => 'NAC', 'e_pgm_vergrp' => 'NON AC', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14E', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN SP & COMP NON A/C & H/C'],
-            ['c_pgm' => 'PU', 'c_pgm_sub' => 'SPR', 'c_pgm_ver' => 'S13', 'e_pgm' => 'SPARE PART', 'c_org_core' => 'HE', 'c_cost' => '10D', 'e_cost' => 'HASIL PENJUALAN SP & COMP A/C & H/C', 'c_pgm_vergrp' => 'SPR', 'e_pgm_vergrp' => 'SPARE PARTS', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '14D', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN S P & COMP A/C & H/C'],
-            ['c_pgm' => '46', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '46L', 'e_pgm' => 'A/C MAINTENANCE TRAINING', 'c_org_core' => 'FT', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => 'AS', 'c_pgm_sub' => 'M99', 'c_pgm_ver' => 'G60', 'e_pgm' => 'HELICOPTER', 'c_org_core' => 'AC', 'c_cost' => '10B', 'e_cost' => 'HASIL PENJUALAN HELICOPTER', 'c_pgm_vergrp' => 'ACF', 'e_pgm_vergrp' => 'AIRCRAFT', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '14B', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN HELICOPTER'],
-            ['c_pgm' => '46', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '46P', 'e_pgm' => 'INCIDENT/ACCIDENT INVESTIGATION TRAINING', 'c_org_core' => 'FT', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => '14', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '14F', 'e_pgm' => 'COFFEE BREAK', 'c_org_core' => 'HM', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => '14', 'c_pgm_sub' => 'SVC', 'c_pgm_ver' => '14H', 'e_pgm' => 'DINNER BUFFET', 'c_org_core' => 'HM', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => '15', 'c_pgm_sub' => 'ASM', 'c_pgm_ver' => '15A', 'e_pgm' => 'PC NUSANTARA & ACCESSORIES', 'c_org_core' => 'IT', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => '15', 'c_pgm_sub' => 'LEA', 'c_pgm_ver' => '15C', 'e_pgm' => 'LEASING - SOFTWARE APLIKASI', 'c_org_core' => 'IT', 'c_cost' => '11C', 'e_cost' => 'HASIL PENJUALAN JASA PAKET PEKERJAAN', 'c_pgm_vergrp' => 'JAS', 'e_pgm_vergrp' => 'JASA', 'c_pgm_veract' => 'CLS', 'c_cost_hpp' => '15C', 'e_cost_hpp' => 'HARGA POKOK PENJUALAN PAKET PEKERJAAN'],
-            ['c_pgm' => 'GS', 'c_pgm_sub' => 'COR', 'c_pgm_ver' => '923', 'e_pgm' => 'Aplication Development', 'c_org_core' => 'CO', 'c_cost' => '-', 'e_cost' => '-', 'c_pgm_vergrp' => '-', 'e_pgm_vergrp' => '-', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '-', 'e_cost_hpp' => '-'],
-            ['c_pgm' => 'GS', 'c_pgm_sub' => 'COR', 'c_pgm_ver' => '924', 'e_pgm' => 'Method & Policy Development', 'c_org_core' => 'CO', 'c_cost' => '-', 'e_cost' => '-', 'c_pgm_vergrp' => '-', 'e_pgm_vergrp' => '-', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '-', 'e_cost_hpp' => '-'],
-            ['c_pgm' => 'GS', 'c_pgm_sub' => 'COR', 'c_pgm_ver' => '926', 'e_pgm' => 'Hak Kekayaan Intelektual', 'c_org_core' => 'CO', 'c_cost' => '-', 'e_cost' => '-', 'c_pgm_vergrp' => '-', 'e_pgm_vergrp' => '-', 'c_pgm_veract' => 'OPN', 'c_cost_hpp' => '-', 'e_cost_hpp' => '-'],
-        ];
+        $path = database_path('seeders/data/vpon.csv');
 
-        foreach ($data as $row) {
-            Vpon::create($row);
+        if (! file_exists($path)) {
+            $this->command->warn("File tidak ditemukan: {$path}");
+
+            return;
         }
+
+        $handle = fopen($path, 'r');
+        $header = fgetcsv($handle, 0, ';');
+        $rows = [];
+
+        while (($data = fgetcsv($handle, 0, ';')) !== false) {
+            $rows[] = [
+                'c_pgm' => trim($data[0]),
+                'c_pgm_sub' => trim($data[1]),
+                'c_pgm_ver' => trim($data[2]),
+                'c_pgm_veract' => trim($data[9]),
+                'c_pgm_vergrp' => trim($data[7]),
+                'e_pgm' => trim($data[3]),
+                'c_org_core' => trim($data[4]),
+                'c_cost' => trim($data[5]),
+                'e_cost' => trim($data[6]),
+                'e_pgm_vergrp' => trim($data[8]),
+                'c_cost_hpp' => trim($data[10]),
+                'e_cost_hpp' => trim($data[11]),
+            ];
+
+            if (count($rows) >= 500) {
+                Vpon::query()->insert($rows);
+                $rows = [];
+            }
+        }
+
+        if (! empty($rows)) {
+            Vpon::query()->insert($rows);
+        }
+
+        fclose($handle);
+
+        $this->command->info('VponSeeder selesai: '.Vpon::query()->count().' baris.');
     }
 }

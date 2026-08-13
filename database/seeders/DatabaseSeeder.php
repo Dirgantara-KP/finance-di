@@ -14,6 +14,11 @@ class DatabaseSeeder extends Seeder
             TmcontrSeeder::class,
             VororgSeeder::class,
             TmbdgtPlafondSeeder::class,
+            TrorgSeeder::class,
+            TmempsalpaySeeder::class,
+            VempsalpaySeeder::class,
+            VempsalpayempSeeder::class,
+            TprrmempiiSeeder::class,
         ]);
     }
 }

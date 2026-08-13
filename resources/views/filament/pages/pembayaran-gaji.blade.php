@@ -1,22 +1,5 @@
 <x-filament-panels::page>
-
-    {{-- Breadcrumb --}}
-    <div class="flex items-center justify-between">
-        <nav class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-            <x-heroicon-o-home class="w-4 h-4" />
-            <span>Beranda</span>
-            <span>&gt;</span>
-            <span>Cash Out</span>
-            <span>&gt;</span>
-            <span class="font-medium text-gray-950 dark:text-white">Pembayaran Gaji</span>
-        </nav>
-
-        <h2 class="text-lg font-bold tracking-wide text-gray-950 dark:text-white">
-            PEMBAYARAN GAJI
-        </h2>
-    </div>
-
-    <form wire:submit.prevent="insert" class="mt-4">
+    <form wire:submit.prevent="insert">
         {{ $this->form }}
     </form>
 
