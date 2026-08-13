@@ -13,13 +13,10 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
-class PlafondAnggaranExport implements
-    FromArray,
-    WithColumnWidths,
-    WithDrawings,
-    WithEvents
+class PlafondAnggaranExport implements FromArray, WithColumnWidths, WithDrawings, WithEvents
 {
     protected array $data;
+
     protected array $info;
 
     public function __construct(array $data, array $info = [])
@@ -106,7 +103,7 @@ class PlafondAnggaranExport implements
             // Row 3 - Subtitle
             [
                 '',
-                'RINGKASAN SALDO ANGGARAN TAHUN ' . ($this->info['tahun'] ?? ''),
+                'RINGKASAN SALDO ANGGARAN TAHUN '.($this->info['tahun'] ?? ''),
                 '',
                 '',
                 '',
@@ -404,7 +401,7 @@ class PlafondAnggaranExport implements
             return [];
         }
 
-        $drawing = new Drawing();
+        $drawing = new Drawing;
 
         $drawing->setName('Logo Perusahaan');
         $drawing->setDescription('Logo Perusahaan');

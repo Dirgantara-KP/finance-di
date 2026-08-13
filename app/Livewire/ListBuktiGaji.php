@@ -145,6 +145,7 @@ class ListBuktiGaji extends Component
             ))
             ->values();
     }
+
     /**
      * @return LengthAwarePaginator<<missing>,<missing>>
      */
@@ -163,6 +164,7 @@ class ListBuktiGaji extends Component
             ['pageName' => 'page'],
         );
     }
+
     /**
      * @return View
      */

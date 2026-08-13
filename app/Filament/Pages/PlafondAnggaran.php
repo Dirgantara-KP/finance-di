@@ -1,10 +1,10 @@
 <?php
 
 namespace App\Filament\Pages;
-use App\Exports\PlafondAnggaranExport;
-use Maatwebsite\Excel\Facades\Excel;
+
 use App\Exceptions\DuplicateTransactionException;
 use App\Exceptions\ForbiddenActionException;
+use App\Exports\PlafondAnggaranExport;
 use App\Services\PlafondAnggaranService;
 use BackedEnum;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
 {
@@ -403,7 +404,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             $this->service->update((int) $this->existingId, $this->addMonth);
 
             $this->lastAppliedChange = $appliedTotal;
-            $this->refreshFromDb(); // TIDAK mereset lastAppliedChange
+            $this->refreshFromDb();
             $this->dataSaved = true;
 
             Notification::make()->title('Data Plafond Anggaran berhasil diupdate')->success()->send();
@@ -438,6 +439,9 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->clearFilters();
     }
 
+    /**
+     * @param  array<int,mixed>  $state
+     */
     private function applyLoadedState(array $state): void
     {
         $this->cPgm = $state['cPgm'] ?? $this->cPgm;
@@ -525,7 +529,7 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
             'printedBy' => 'System',
         ];
 
-        $filename = 'Plafond_Anggaran_' . $this->tahunAnggaran . '.xlsx';
+        $filename = 'Plafond_Anggaran_'.$this->tahunAnggaran.'.xlsx';
 
         return Excel::download(
             new PlafondAnggaranExport($data, $info),
