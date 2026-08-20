@@ -23,6 +23,10 @@ class TmbdgtPlafondSeeder extends Seeder
 
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
             $num = fn (int $i): string|int => $data[$i] === '' ? 0 : $data[$i];
+            $months = fn (int $first, string $key): array => array_combine(
+                array_map(fn (int $i) => $key.$i, range(1, 12)),
+                array_map($num, range($first, $first + 11)),
+            );
 
             $rows[] = [
                 'c_source' => trim($data[0]),
@@ -38,37 +42,27 @@ class TmbdgtPlafondSeeder extends Seeder
                 'c_coa_dr' => trim($data[10]),
                 'c_coa_cr' => trim($data[11]),
                 'c_cy' => trim($data[12]),
-                'v_bdgt_saldomonth1' => $num(26),
-                'v_bdgt_saldomonth2' => $num(27),
-                'v_bdgt_saldomonth3' => $num(28),
-                'v_bdgt_saldomonth4' => $num(29),
-                'v_bdgt_saldomonth5' => $num(30),
-                'v_bdgt_saldomonth6' => $num(31),
-                'v_bdgt_saldomonth7' => $num(32),
-                'v_bdgt_saldomonth8' => $num(33),
-                'v_bdgt_saldomonth9' => $num(34),
-                'v_bdgt_saldomonth10' => $num(35),
-                'v_bdgt_saldomonth11' => $num(36),
-                'v_bdgt_saldomonth12' => $num(37),
+                ...$months(13, 'v_bdgt_month'),
+                'v_bdgt_total' => $num(25),
+                ...$months(26, 'v_bdgt_saldomonth'),
                 'v_bdgt_saldototal' => $num(38),
                 'i_entry' => trim($data[39]),
                 'd_entry' => trim($data[40]),
                 'c_org_center' => trim($data[41]),
+                'c_org_dit' => trim($data[42]),
+                'c_bdgt_cat' => trim($data[43]),
+                ...$months(44, 'v_bdgt_planmonth'),
                 'v_bdgt_plantotal' => $num(56),
+                'c_stat_bdgt' => trim($data[57]),
+                'i_ref_updbdgt' => trim($data[58]),
+                'd_ref_updbdgt' => trim($data[59]),
                 'c_org_contr' => trim($data[60]),
-                'v_bdgt_addmonth1' => $num(61),
-                'v_bdgt_addmonth2' => $num(62),
-                'v_bdgt_addmonth3' => $num(63),
-                'v_bdgt_addmonth4' => $num(64),
-                'v_bdgt_addmonth5' => $num(65),
-                'v_bdgt_addmonth6' => $num(66),
-                'v_bdgt_addmonth7' => $num(67),
-                'v_bdgt_addmonth8' => $num(68),
-                'v_bdgt_addmonth9' => $num(69),
-                'v_bdgt_addmonth10' => $num(70),
-                'v_bdgt_addmonth11' => $num(71),
-                'v_bdgt_addmonth12' => $num(72),
+                ...$months(61, 'v_bdgt_addmonth'),
                 'v_bdgt_addtotal' => $num(73),
+                'c_bdgt_stat' => trim($data[74]),
+                'i_pmn' => trim($data[75]),
+                'd_pmn' => trim($data[76]),
+                'i_order' => trim($data[77]),
             ];
 
             if (count($rows) >= 500) {

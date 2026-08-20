@@ -7,9 +7,12 @@ use BackedEnum;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Pages\PageConfiguration;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
-
+/**
+ * @extends Page<PageConfiguration>
+ */
 class CollectingGaji extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
