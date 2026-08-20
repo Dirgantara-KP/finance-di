@@ -36,6 +36,8 @@ class PembayaranGaji extends Page implements HasForms
 
     public array $rincianGaji = [];
 
+    public array $daftarBuktiGaji = [];
+
     public function getTitle(): string
     {
         return 'Pembayaran Gaji';
@@ -79,11 +81,13 @@ class PembayaranGaji extends Page implements HasForms
     }
 
     #[On('bukti-gaji-selected')]
-    public function isiDariBuktiGaji(array $data): void
+    public function pilihBuktiGaji(string $tglGaji, string $bankKode, string $bankNama): void
     {
-        $this->data['tgl_proses'] = $data['tanggal_gaji'];
-        $this->data['bank_kode'] = $data['bank_kode'];
-        $this->data['bank_nama'] = $data['bank_nama'];
+        $this->data['tgl_proses'] = $tglGaji;
+        $this->data['bank_kode'] = $bankKode;
+        $this->data['bank_nama'] = $bankNama;
+
+        $this->mountedActions = []; 
 
         Notification::make()
             ->title('Bukti gaji berhasil dipilih')
@@ -101,37 +105,73 @@ class PembayaranGaji extends Page implements HasForms
         return $schema
             ->components([
                 Grid::make(12)
+                    ->extraAttributes([
+                        'class' => 'items-stretch', 
+                    ])
                     ->schema([
-                        // === Nomor Bukti Gaji ===
+
                         Section::make('Nomor Bukti Gaji')
                             ->columnSpan(7)
+                            ->extraAttributes([
+                                'class' => 'h-full flex flex-col', 
+                            ])
                             ->schema([
-                                Grid::make(3)
+                                Grid::make(5)
                                     ->schema([
                                         TextInput::make('nomor_bukti')
                                             ->label('Nomor Bukti')
                                             ->disabled()
                                             ->columnSpan(2),
+
                                         TextInput::make('lok')
                                             ->label('Lok.')
-                                            ->disabled(),
+                                            ->disabled()
+                                            ->columnSpan(1),
+
+                                        DatePicker::make('tgl_proses')
+                                            ->label('Tgl Proses')
+                                            ->displayFormat('d-m-Y')
+                                            ->columnSpan(2)
+                                            ->suffixAction(
+                                                Action::make('cariBukti')
+                                                    ->icon('heroicon-o-magnifying-glass')
+                                                    ->modalHeading('List Bukti Gaji')
+                                                    ->modalWidth('2xl')
+                                                    ->modalSubmitAction(false)
+                                                    ->modalCancelAction(false)
+                                                    ->modalContent(fn () => view('filament.pages.partials.list-bukti-gaji', [
+                                                        'items' => $this->daftarBuktiGaji,
+                                                    ])),
+                                            ),
                                     ]),
-                                DatePicker::make('tgl_proses')
-                                    ->label('Tgl Proses')
-                                    ->displayFormat('d-m-Y')
-                                    ->suffixAction(
-                                        Action::make('cariBukti')
-                                            ->icon('heroicon-o-magnifying-glass')
-                                            ->action(fn () => $this->dispatch('open-list-bukti-gaji')),
-                                    ),
+
+                                Grid::make(4)
+                                    ->schema([
+                                        Select::make('bank_kode')
+                                            ->label('Pembayaran Via')
+                                            ->columnSpan(1)
+                                            ->options([
+                                                'BCA' => 'BCA',
+                                                'BNI' => 'BNI',
+                                                'BRI' => 'BRI',
+                                                'MANDIRI' => 'MANDIRI',
+                                            ]),
+
+                                        TextInput::make('bank_nama')
+                                            ->label(' ')
+                                            ->disabled()
+                                            ->columnSpan(3),
+                                    ]),
                             ]),
 
-                        // === Tgl Bukti Media ===
-                        Section::make()
+                        Section::make('Tgl Bukti Media')
                             ->columnSpan(5)
+                            ->extraAttributes([
+                                'class' => 'h-full flex flex-col',
+                            ])
                             ->schema([
                                 DatePicker::make('tgl_bukti_media')
-                                    ->label('Tgl Bukti Media')
+                                    ->label(' ') 
                                     ->displayFormat('d-m-Y'),
                                 Grid::make(3)
                                     ->schema([
@@ -143,27 +183,6 @@ class PembayaranGaji extends Page implements HasForms
                                             ->columnSpan(2),
                                     ]),
                             ]),
-
-                        // === Pembayaran Via ===
-                        Section::make()
-                            ->columnSpan(12)
-                            ->schema([
-                                Grid::make(4)
-                                    ->schema([
-                                        Select::make('bank_kode')
-                                            ->label('Pembayaran Via')
-                                            ->options([
-                                                'BCA' => 'BCA',
-                                                'BNI' => 'BNI',
-                                                'BRI' => 'BRI',
-                                                'MANDIRI' => 'MANDIRI',
-                                            ]),
-                                        TextInput::make('bank_nama')
-                                            ->label(' ')
-                                            ->disabled()
-                                            ->columnSpan(3),
-                                    ]),
-                            ]),
                     ]),
 
                 TextInput::make('uraian_pembayaran')
@@ -171,44 +190,63 @@ class PembayaranGaji extends Page implements HasForms
                     ->columnSpanFull(),
 
                 Grid::make(12)
+                    ->extraAttributes([
+                        'class' => 'items-stretch', 
+                    ])
                     ->schema([
-                        Group::make()
+                        Section::make('Project No. (PON)')
                             ->columnSpan(6)
+                            ->extraAttributes([
+                                'class' => 'h-full flex flex-col',
+                            ])
                             ->schema([
-                                Fieldset::make('Project No. (PON)')
+
+                                Grid::make(2)
                                     ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextInput::make('pon_no')
-                                                    ->maxWidth('full'),
 
-                                                TextInput::make('pon_seq')
-                                                    ->maxWidth('full'),
+                                        TextInput::make('pon_no')
+                                            ->label('Program')
+                                            ->columnSpan(1),
 
-                                                TextInput::make('pon_sub')
-                                                    ->maxWidth('full'),
+                                        TextInput::make('pon_seq')
+                                            ->label('Sub')
+                                            ->columnSpan(1),
 
-                                                TextInput::make('pon_ket')
-                                                    ->maxWidth('full')
-                                                    ->suffixAction(
-                                                        Action::make('cariPon')
-                                                            ->icon('heroicon-o-magnifying-glass')
-                                                            ->action(fn () => null),
-                                                    ),
-                                            ]),
                                     ]),
+
+                                Grid::make(4)
+                                    ->schema([
+
+                                        TextInput::make('pon_sub')
+                                            ->label('Versi')
+                                            ->columnSpan(1),
+
+                                        TextInput::make('pon_ket')
+                                            ->label('Nama Project')
+                                            ->columnSpan(3)
+                                            ->suffixAction(
+                                                Action::make('cariPon')
+                                                    ->icon('heroicon-o-magnifying-glass')
+                                                    ->action(fn () => null),
+                                            ),
+
+                                    ]),
+
                                 Fieldset::make('Dibayar melalui Rek.')
+                                    ->columns(2)
                                     ->schema([
                                         TextInput::make('rek_bayar_no')
-                                            ->label(false),
+                                            ->label('No. Rekening'),
+
                                         TextInput::make('rek_bayar_nama')
-                                            ->label(false)
+                                            ->label('Nama Rekening')
                                             ->suffixAction(
                                                 Action::make('cariRekBayar')
                                                     ->icon('heroicon-o-magnifying-glass')
                                                     ->action(fn () => null),
                                             ),
                                     ]),
+
                                 TextInput::make('no_giro_cek')
                                     ->label('Nomor Giro/Cek')
                                     ->suffixAction(
@@ -216,11 +254,16 @@ class PembayaranGaji extends Page implements HasForms
                                             ->icon('heroicon-o-magnifying-glass')
                                             ->action(fn () => null),
                                     ),
+
                             ]),
 
-                        Group::make()
+                        Section::make('Cara Pembayaran')
                             ->columnSpan(6)
+                            ->extraAttributes([
+                                'class' => 'h-full flex flex-col', 
+                            ])
                             ->schema([
+
                                 Select::make('cara_pembayaran')
                                     ->label('Cara Pembayaran')
                                     ->options([
@@ -228,32 +271,38 @@ class PembayaranGaji extends Page implements HasForms
                                         'TUNAI' => 'TUNAI',
                                         'GIRO' => 'GIRO',
                                     ]),
+
                                 Fieldset::make('Penanggung Jwb. Gaji')
+                                    ->columns(6)
                                     ->schema([
-                                        Grid::make(3)
-                                            ->schema([
-                                                TextInput::make('pj_kode'),
-                                                TextInput::make('pj_nama')
-                                                    ->columnSpan(2)
-                                                    ->suffixAction(
-                                                        Action::make('cariPj')
-                                                            ->icon('heroicon-o-magnifying-glass')
-                                                            ->action(fn () => null),
-                                                    ),
-                                            ]),
+                                        TextInput::make('pj_kode')
+                                            ->label('Kode')
+                                            ->columnSpan(2),
+
+                                        TextInput::make('pj_nama')
+                                            ->label('Nama')
+                                            ->columnSpan(4)
+                                            ->suffixAction(
+                                                Action::make('cariPj')
+                                                    ->icon('heroicon-o-magnifying-glass')
+                                                    ->action(fn () => null),
+                                            ),
                                     ]),
+
                                 Grid::make(3)
                                     ->schema([
+
                                         TextInput::make('rek_no')
-                                            ->label('Rekening No. / Val.')
+                                            ->label('Rekening No.')
                                             ->columnSpan(2),
-                                        Select::make('rek_val')
-                                            ->label(false)
-                                            ->options([
-                                                'IDR' => 'IDR',
-                                                'USD' => 'USD',
-                                            ]),
+
+                                        TextInput::make('rek_val')
+                                            ->label('Val.')
+                                            ->disabled()
+                                            ->columnSpan(1),
+
                                     ]),
+
                                 TextInput::make('bank_tujuan')
                                     ->label('Nama Bank Tujuan')
                                     ->suffixAction(
@@ -261,9 +310,12 @@ class PembayaranGaji extends Page implements HasForms
                                             ->icon('heroicon-o-magnifying-glass')
                                             ->action(fn () => null),
                                     ),
+
                             ]),
+
                     ]),
             ])
+    
             ->statePath('data');
     }
 

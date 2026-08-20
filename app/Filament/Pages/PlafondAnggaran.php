@@ -93,7 +93,8 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
 
     /** @var array<int,int> snapshot addMonth saat load — baseline untuk dirty tracking */
     public array $cleanAddMonth = [];
-
+    
+    public array $daftarBuktiGaji = [];
     public function mount(): void
     {
         if (! $this->tahunAnggaran) {
@@ -118,6 +119,13 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
                 $this->resetMonthData();
             }
         }
+
+        $this->daftarBuktiGaji = [
+        ['tgl_gaji' => '2025-05-31', 'bank_kode' => 'BCA', 'bank_nama' => 'BANK CENTRAL ASIA TBK', 'jumlah' => 626416000],
+        ['tgl_gaji' => '2025-04-30', 'bank_kode' => 'BCA', 'bank_nama' => 'BANK CENTRAL ASIA TBK', 'jumlah' => 610250000],
+        ['tgl_gaji' => '2025-03-31', 'bank_kode' => 'BNI', 'bank_nama' => 'BANK NEGARA INDONESIA', 'jumlah' => 598340000],
+    ];
+
     }
 
     public function getAllFiltersSelectedProperty(): bool
