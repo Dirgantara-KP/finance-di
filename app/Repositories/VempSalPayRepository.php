@@ -3,13 +3,14 @@
 namespace App\Repositories;
 
 use App\Models\VempSalPay;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
-class VempSalPayRepository
+final class VempSalPayRepository
 {
     /**
      * @param  array<int, string>|null  $orgEselon
+     * @return Collection<int, VempSalPay>
      */
     public function findByPeriode(string $periode, ?array $orgEselon = null): Collection
     {

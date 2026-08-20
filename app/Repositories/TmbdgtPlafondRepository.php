@@ -19,7 +19,8 @@ final class TmbdgtPlafondRepository
             ->where('c_org', 'LIKE', $p->org.'%')
             ->where('c_pgm_ver', $p->pon)
             ->where('c_coa_dr', $p->sandi)
-            ->forKontrak($p->orgContr, $p->iContr)
+            ->where('c_org_contr', $p->orgContr)
+            ->where('i_contr', $p->iContr)
             ->first();
     }
 

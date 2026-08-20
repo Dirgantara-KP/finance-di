@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Models\Tmcontr;
 use App\Models\Trchartacct;
+use App\Models\Trorg;
 use App\Models\Vororg;
 use App\Models\Vpon;
 use App\Repositories\TmcontrRepository;
 use App\Repositories\TrchartacctRepository;
+use App\Repositories\TrorgRepository;
 use App\Repositories\VororgRepository;
 use App\Repositories\VponRepository;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
             Vororg::$event(fn () => VororgRepository::flushCache());
             Trchartacct::$event(fn () => TrchartacctRepository::flushCache());
             Vpon::$event(fn () => VponRepository::flushCache());
+        }
+
+        // Trorg tanpa SoftDeletes — tidak punya event restored().
+        foreach (['saved', 'deleted'] as $event) {
+            Trorg::$event(fn () => TrorgRepository::flushCache());
         }
     }
 }

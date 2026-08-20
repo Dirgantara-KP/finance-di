@@ -3,10 +3,13 @@
 namespace App\Repositories;
 
 use App\Models\VempSalPayEmp;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
-class VempSalPayEmpRepository
+final class VempSalPayEmpRepository
 {
+    /**
+     * @return Collection<int, VempSalPayEmp>
+     */
     public function findRekapCostCenter(
         string $tanggalProsesGaji,
         ?string $bankKas = null,
@@ -31,6 +34,9 @@ class VempSalPayEmpRepository
             ->get();
     }
 
+    /**
+     * @return Collection<int, VempSalPayEmp>
+     */
     public function findByCostCenter(
         string $tanggalProsesGaji,
         string $orgCur,

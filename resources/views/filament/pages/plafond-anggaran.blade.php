@@ -10,7 +10,7 @@
                         <x-filament::input.select wire:model.live="tahunAnggaran">
                             <option value="">-- Pilih Tahun --</option>
                             @foreach ($this->tahunOptions as $value)
-                                <option value="{{ $value }}">{{ $value }}</option>
+                                <option value="{{ $value }}" @selected((string) $value === (string) $this->tahunAnggaran)>{{ $value }}</option>
                             @endforeach
                         </x-filament::input.select>
                     </x-filament::input.wrapper>

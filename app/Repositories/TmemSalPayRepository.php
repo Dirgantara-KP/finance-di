@@ -3,10 +3,14 @@
 namespace App\Repositories;
 
 use App\Models\Tmempsalpay;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
-class TmemSalPayRepository
+final class TmemSalPayRepository
 {
+    /**
+     * @return Collection<int, Tmempsalpay>
+     */
     public function findRekapCostCenter(
         string $tanggalProsesGaji,
         ?string $bankKas = null,
@@ -57,7 +61,7 @@ class TmemSalPayRepository
             ->when(
                 ! empty($orgEselon),
                 fn ($query) => $query->whereIn(
-                    \DB::raw('SUBSTRING(a.c_org_cur, 1, 2)'),
+                    DB::raw('SUBSTRING(a.c_org_cur, 1, 2)'),
                     $orgEselon
                 )
             )

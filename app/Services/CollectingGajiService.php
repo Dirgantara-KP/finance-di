@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\VempSalPay;
 use App\Repositories\TmemSalPayRepository;
 use App\Repositories\VempSalPayEmpRepository;
 use App\Repositories\VempSalPayRepository;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
 final class CollectingGajiService
 {
@@ -30,7 +31,7 @@ final class CollectingGajiService
     }
 
     /**
-     * @return Collection<int, object{NOMOR_BUKTI_GAJI: string, DIBAYAR_VIA: string, LOKASI: string}>
+     * @return Collection<int, VempSalPay>
      */
     public function getDaftarBukti(string $tanggalProsesGaji): Collection
     {
@@ -59,14 +60,18 @@ final class CollectingGajiService
             orgEselon: $orgEselon,
         );
 
-        return $rows->map(fn ($row) => [
-            'org_cur' => $row->kode_unit_organisasi,
-            'cost_center' => $row->kode_unit_organisasi.' - '.$row->nama_unit_organisasi,
-            'lokasi' => $row->lokasi,
-            'besar_gaji' => (float) $row->besar_gaji,
-            'pihak_lain' => (float) $row->pihak_lain,
-            'yang_bersangkutan' => (float) $row->yang_bersangkutan,
-        ])->values()->all();
+        return $rows->map(function ($row) {
+            $attrs = $row->getAttributes();
+
+            return [
+                'org_cur' => $attrs['kode_unit_organisasi'],
+                'cost_center' => $attrs['kode_unit_organisasi'].' - '.$attrs['nama_unit_organisasi'],
+                'lokasi' => $attrs['lokasi'],
+                'besar_gaji' => (float) $attrs['besar_gaji'],
+                'pihak_lain' => (float) $attrs['pihak_lain'],
+                'yang_bersangkutan' => (float) $attrs['yang_bersangkutan'],
+            ];
+        })->values()->all();
     }
 
     /**
@@ -91,16 +96,20 @@ final class CollectingGajiService
             nomorBukti: $nomorBukti,
         );
 
-        $mapped = $rows->map(fn ($row) => [
-            'nik' => $row->nik,
-            'nama' => $row->nama,
-            'unit_org' => $row->unit_org,
-            'via' => $row->via,
-            'lokasi' => $row->lokasi,
-            'besar_gaji' => (float) $row->besar_gaji,
-            'pihak_lain' => (float) $row->pihak_lain,
-            'yang_bersangkutan' => (float) $row->yang_bersangkutan,
-        ])->values();
+        $mapped = $rows->map(function ($row) {
+            $attrs = $row->getAttributes();
+
+            return [
+                'nik' => $attrs['nik'],
+                'nama' => $attrs['nama'],
+                'unit_org' => $attrs['unit_org'],
+                'via' => $attrs['via'],
+                'lokasi' => $attrs['lokasi'],
+                'besar_gaji' => (float) $attrs['besar_gaji'],
+                'pihak_lain' => (float) $attrs['pihak_lain'],
+                'yang_bersangkutan' => (float) $attrs['yang_bersangkutan'],
+            ];
+        })->values();
 
         return [
             'rows' => $mapped->all(),
