@@ -36,7 +36,20 @@ class PembayaranGaji extends Page implements HasForms
 
     public array $rincianGaji = [];
 
-    public array $daftarBuktiGaji = [];
+    public array $daftarBuktiGajiAll = [];
+
+    public array $filterBuktiGaji = [
+        'tgl_dari' => '2022-01-01',
+        'tgl_sampai' => '2025-12-31',
+        'bank' => '',
+        'nama_bank' => '',
+    ];
+
+    public ?array $selectedBuktiGajiItem = null;
+
+    public int $halamanBuktiGaji = 1;
+
+    protected int $perPageBuktiGaji = 10;
 
     public function getTitle(): string
     {
@@ -78,6 +91,29 @@ class PembayaranGaji extends Page implements HasForms
             'rek_val' => 'IDR',
             'bank_tujuan' => 'BANK CENTRAL ASIA TBK',
         ]);
+
+        $bankList = [
+        'BCA' => 'BANK CENTRAL ASIA TBK',
+        'BNI' => 'BANK NEGARA INDONESIA (PERSERO) TBK',
+        'BRI' => 'BANK RAKYAT INDONESIA (PERSERO) TBK',
+        'MANDIRI' => 'BANK MANDIRI (PERSERO) TBK',
+    ];
+    $bankKodes = array_keys($bankList);
+
+    $this->daftarBuktiGajiAll = [];
+    $tanggal = \Carbon\Carbon::create(2025, 5, 31);
+
+    for ($i = 0; $i < 28; $i++) {
+        $bankKode = $bankKodes[$i % count($bankKodes)];
+        $this->daftarBuktiGajiAll[] = [
+            'tgl_gaji'  => $tanggal->copy()->format('Y-m-d'),
+            'bank_kode' => $bankKode,
+            'bank_nama' => $bankList[$bankKode],
+            'jumlah'    => random_int(280, 630) * 10000000,
+        ];
+        $tanggal->subDays(random_int(1, 16));
+    }
+        
     }
 
     #[On('bukti-gaji-selected')]
@@ -136,12 +172,32 @@ class PembayaranGaji extends Page implements HasForms
                                                 Action::make('cariBukti')
                                                     ->icon('heroicon-o-magnifying-glass')
                                                     ->modalHeading('List Bukti Gaji')
-                                                    ->modalWidth('2xl')
-                                                    ->modalSubmitAction(false)
-                                                    ->modalCancelAction(false)
+                                                    ->modalWidth('4xl')
                                                     ->modalContent(fn () => view('filament.pages.partials.list-bukti-gaji', [
-                                                        'items' => $this->daftarBuktiGaji,
-                                                    ])),
+                                                        'hasil' => $this->getBuktiGajiFiltered(),
+                                                        'selectedBuktiGajiItem' => $this->selectedBuktiGajiItem,
+                                                    ]))
+                                                    ->modalSubmitAction(
+                                                        Action::make('pilih')
+                                                            ->label('Pilih')
+                                                            ->icon('heroicon-o-check')
+                                                            ->disabled(fn () => blank($this->selectedBuktiGajiItem))
+                                                            ->action(function () {
+                                                                if (blank($this->selectedBuktiGajiItem)) {
+                                                                    return;
+                                                                }
+
+                                                                $this->data['tgl_proses'] = $this->selectedBuktiGajiItem['tgl_gaji'];
+                                                                $this->data['bank_kode'] = $this->selectedBuktiGajiItem['bank_kode'];
+                                                                $this->data['bank_nama'] = $this->selectedBuktiGajiItem['bank_nama'];
+                                                                $this->selectedBuktiGajiItem = null;
+
+                                                                Notification::make()->title('Bukti gaji berhasil dipilih')->success()->send();
+                                                            }),
+                                                    )
+                                                    ->modalCancelAction(
+                                                        Action::make('tutup')->label('Tutup')->color('gray'),
+                                                    ),
                                             ),
                                     ]),
 
@@ -353,5 +409,87 @@ class PembayaranGaji extends Page implements HasForms
     public function close(): void
     {
         $this->redirect(static::getUrl());
+    }
+
+    public function getBuktiGajiFiltered(): array
+    {
+        $items = collect($this->daftarBuktiGajiAll)
+            ->filter(function (array $item) {
+                if ($item['tgl_gaji'] < $this->filterBuktiGaji['tgl_dari']
+                    || $item['tgl_gaji'] > $this->filterBuktiGaji['tgl_sampai']) {
+                    return false;
+                }
+
+                if (filled($this->filterBuktiGaji['bank']) && $item['bank_kode'] !== $this->filterBuktiGaji['bank']) {
+                    return false;
+                }
+
+                if (filled($this->filterBuktiGaji['nama_bank'])
+                    && ! str_contains(strtolower($item['bank_nama']), strtolower($this->filterBuktiGaji['nama_bank']))) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->sortByDesc('tgl_gaji')
+            ->values();
+
+        $total = $items->count();
+        $lastPage = max((int) ceil($total / $this->perPageBuktiGaji), 1);
+
+        if ($this->halamanBuktiGaji > $lastPage) {
+            $this->halamanBuktiGaji = $lastPage;
+        }
+
+        return [
+            'items' => $items->forPage($this->halamanBuktiGaji, $this->perPageBuktiGaji)->values()->all(),
+            'total' => $total,
+            'page' => $this->halamanBuktiGaji,
+            'perPage' => $this->perPageBuktiGaji,
+            'lastPage' => $lastPage,
+        ];
+    }
+
+    public function cariBuktiGaji(): void
+    {
+        $this->halamanBuktiGaji = 1;
+        $this->selectedBuktiGajiItem = null;
+    }
+
+    public function refreshBuktiGaji(): void
+    {
+        $this->filterBuktiGaji = [
+            'tgl_dari' => '2022-01-01',
+            'tgl_sampai' => '2025-12-31',
+            'bank' => '',
+            'nama_bank' => '',
+        ];
+        $this->halamanBuktiGaji = 1;
+        $this->selectedBuktiGajiItem = null;
+    }
+
+    public function gantiHalamanBuktiGaji(int $halaman): void
+    {
+        $this->halamanBuktiGaji = $halaman;
+    }
+
+    public function pilihBarisBuktiGaji(string $tglGaji, string $bankKode, string $bankNama): void
+    {
+        $this->selectedBuktiGajiItem = [
+            'tgl_gaji' => $tglGaji,
+            'bank_kode' => $bankKode,
+            'bank_nama' => $bankNama,
+        ];
+    }
+
+    public function pilihLangsungBuktiGaji(string $tglGaji, string $bankKode, string $bankNama): void
+    {
+        $this->data['tgl_proses'] = $tglGaji;
+        $this->data['bank_kode'] = $bankKode;
+        $this->data['bank_nama'] = $bankNama;
+        $this->selectedBuktiGajiItem = null;
+        $this->mountedActions = [];
+
+        Notification::make()->title('Bukti gaji berhasil dipilih')->success()->send();
     }
 }
