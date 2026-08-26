@@ -18,19 +18,21 @@ class TmempsalpaySeeder extends Seeder
             return;
         }
 
+        Tmempsalpay::query()->truncate();
+
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle);
         $rows = [];
 
         while (($data = fgetcsv($handle)) !== false) {
             $rows[] = [
-                'd_proc_gaji' => Carbon::parse($data[0])->toDateString(),
-                'c_org_cur' => $data[1],
-                'i_inv_gaji' => $data[2],
-                'c_bank_gaji' => $data[3],
-                'c_emp_payloc' => $data[4],
-                'v_emp_tunjgaji' => $data[5],
-                'v_emp_potgaji' => $data[6],
+                'd_proc_gaji' => Carbon::parse(trim($data[0]))->toDateString(),
+                'c_org_cur' => trim($data[1]),
+                'i_inv_gaji' => trim($data[2]),
+                'c_bank_gaji' => trim($data[3]),
+                'c_emp_payloc' => trim($data[4]),
+                'v_emp_tunjgaji' => trim($data[5]) !== '' ? trim($data[5]) : 0,
+                'v_emp_potgaji' => trim($data[6]) !== '' ? trim($data[6]) : 0,
             ];
 
             // Insert per 500 baris supaya tidak terlalu berat sekali jalan.

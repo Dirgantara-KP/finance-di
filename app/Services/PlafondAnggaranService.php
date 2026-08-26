@@ -6,6 +6,8 @@ use App\Dtos\PlafondAnggaranDto;
 use App\Exceptions\DuplicateTransactionException;
 use App\Exceptions\ForbiddenActionException;
 use App\Exceptions\InvalidPeriodException;
+use App\Models\TmbdgtPlafond;
+use App\Models\Vpon;
 use App\Repositories\TmbdgtPlafondRepository;
 use App\Repositories\TmcontrRepository;
 use App\Repositories\TrchartacctRepository;
@@ -34,23 +36,12 @@ final class PlafondAnggaranService
         $kontrak = $this->kontrakRepo->findByContr($f['kontrak'], $f['org']);
         $cOrgContr = $kontrak->c_org_contr ?? $f['org'];
 
-        $record = $this->repo->findExisting($this->lookupDto($f, $cOrgContr));
+        $record = $this->repo->findExisting($this->lookupDto($f, $cOrgContr, $pon));
         if ($record !== null) {
             $monthly = $this->repo->monthlyState($record);
-            // ponytail: repo monthlyState returns v_bdgt_saldomonth under key 'saldoAkhir',
-            // but that column actually stores the opening plafond (Saldo Awal). Misnomer kept
-            // to avoid wider rename; read carefully.
-            $saldoAwalDb = $monthly['saldoAkhir'];   // v_bdgt_saldomonth  = Saldo Awal (opening)
-            $cumulativeAdd = $monthly['addMonth'];   // v_bdgt_addmonth    = Penambahan kumulatif (stored)
-            $saldoAwal = $saldoAwalDb;
-            // spec: Saldo Akhir = Saldo Awal + Penambahan (matches frontend blade L134)
-            $saldoAkhir = array_map(
-                static fn (int $awal, int $add): int => max(0, $awal + $add),
-                $saldoAwalDb,
-                $cumulativeAdd,
-            );
-            // form Penambahan column = fresh delta buffer (0 after load)
-            $addMonth = array_fill(0, 12, 0);
+            $saldoAwal = $monthly['saldoAwal'];   // v_bdgt_saldomonth = Saldo Awal
+            $addMonth = array_fill(0, 12, 0);     // Buffer penambahan baru (0 setelah load)
+            $saldoAkhir = $saldoAwal;             // Saldo Akhir awal = Saldo Awal + 0
         } else {
             $saldoAwal = array_fill(0, 12, 0);
             $addMonth = array_fill(0, 12, 0);
@@ -64,7 +55,8 @@ final class PlafondAnggaranService
             'namaSandi' => $sandi->e_cost ?? '',
             'cOrgContr' => $cOrgContr,
             'existingId' => $record?->id,
-            'canUpdate' => $record !== null && $this->canUpdate((string) $f['tahun'], (string) $record->c_bdgt_contrstat),
+            'stat' => $record?->c_bdgt_stat,
+            'canUpdate' => $record !== null && $this->canUpdate((string) $f['tahun'], (string) $record->c_bdgt_contrstat, (string) $record->c_bdgt_stat),
             'saldoAwal' => $saldoAwal,
             'addMonth' => $addMonth,
             'saldoAkhir' => $saldoAkhir,
@@ -93,13 +85,14 @@ final class PlafondAnggaranService
         $kontrak = $this->kontrakRepo->findByContr($data['kontrak'], $data['org']);
         $cOrgContr = $kontrak->c_org_contr ?? $data['org'];
 
-        if ($this->repo->findExisting($this->lookupDto($data, $cOrgContr))) {
+        if ($this->repo->findExisting($this->lookupDto($data, $cOrgContr, $pon))) {
             throw new DuplicateTransactionException(reference: "{$data['org']}/{$data['sandi']}/{$data['pon']}");
         }
 
-        $addMonth = $this->normalizeMonthly($data['add_month']);
-        $saldoMonth = $addMonth;
-        $addMonth = array_fill(0, 12, 0);
+        $inputAddMonth = $this->normalizeMonthly($data['add_month']);
+        // Kondisi 1: saldo awal == null -> Saldo Penambahan menjadi v_bdgt_addmonth dan v_bdgt_saldomonth
+        $saldoMonth = $inputAddMonth;
+        $addMonth = $inputAddMonth;
 
         $payload = new PlafondAnggaranDto(
             tahun: (string) $data['tahun'],
@@ -131,37 +124,53 @@ final class PlafondAnggaranService
             if (! $record) {
                 throw new ForbiddenActionException(action: 'update plafond (record tidak ditemukan)');
             }
-            if (! $this->canUpdate((string) $record->c_bdgt_anggaran, (string) $record->c_bdgt_contrstat)) {
+
+            if ($record->c_bdgt_stat === 'CLS') {
+                throw new ForbiddenActionException(action: 'update plafond (Plafond berstatus CLOSE tidak dapat diubah)');
+            }
+
+            if (! $this->canUpdate((string) $record->c_bdgt_anggaran, (string) $record->c_bdgt_contrstat, (string) $record->c_bdgt_stat)) {
                 throw new ForbiddenActionException(action: 'update plafond (tahun lampau hanya view)');
             }
 
-            $addMonth = $this->normalizeMonthly($addMonth);
+            $inputAddMonth = $this->normalizeMonthly($addMonth);
 
             $current = $this->repo->monthlyState($record);
-            $curSaldoAwal = $current['saldoAkhir'];  // v_bdgt_saldomonth = Saldo Awal (opening)
-            $curCumulativeAdd = $current['addMonth']; // v_bdgt_addmonth   = Penambahan kumulatif (stored)
+            $curSaldoAwal = $current['saldoAwal']; // v_bdgt_saldomonth lama
             $newSaldoAwal = [];
-            $newCumulativeAdd = [];
+            $newAddMonth = [];
 
             for ($i = 0; $i < 12; $i++) {
-                $add = max(0, $addMonth[$i] ?? 0);
-                $awal = $curSaldoAwal[$i] ?? 0;
+                $add = max(0, $inputAddMonth[$i] ?? 0);
+                $curAwal = max(0, $curSaldoAwal[$i] ?? 0);
 
-                if ($awal === 0) {
-                    // first allocation: input becomes opening, additions stay 0
-                    $newSaldoAwal[$i] = $add;
-                    $newCumulativeAdd[$i] = 0;
-                } else {
-                    // existing opening: accumulate delta into stored cumulative
-                    $newSaldoAwal[$i] = $awal;
-                    $newCumulativeAdd[$i] = ($curCumulativeAdd[$i] ?? 0) + $add;
-                }
+                // Kondisi 2: saldo awal != null:
+                // 1. Saldo Penambahan menjadi v_bdgt_addmonth (replace value kondisi pertama)
+                // 2. v_bdgt_saldomonth = Saldo Awal lama + Saldo Penambahan baru
+                $newAddMonth[$i] = $add;
+                $newSaldoAwal[$i] = $curAwal + $add;
             }
 
             $this->repo->updateRecord($record, new PlafondAnggaranDto(
                 saldoMonth: $newSaldoAwal,
-                addMonth: $newCumulativeAdd,
+                addMonth: $newAddMonth,
             ));
+        });
+    }
+
+    public function setStat(int $id, string $stat): void
+    {
+        if (! in_array($stat, ['OPN', 'CLS'], true)) {
+            throw new ForbiddenActionException(action: 'set status plafond (nilai tidak valid)');
+        }
+
+        DB::transaction(function () use ($id, $stat) {
+            $record = $this->repo->findForUpdate($id);
+            if (! $record) {
+                throw new ForbiddenActionException(action: 'set status plafond (record tidak ditemukan)');
+            }
+
+            $this->repo->updateStat($id, $stat);
         });
     }
 
@@ -192,11 +201,18 @@ final class PlafondAnggaranService
     public function getTahunOptions(): array
     {
         $currentYear = now()->year;
+        $standard = range($currentYear, $currentYear - 5);
+        $dbYears = TmbdgtPlafond::query()
+            ->distinct()
+            ->pluck('c_bdgt_anggaran')
+            ->filter()
+            ->map(fn ($y) => (int) $y)
+            ->toArray();
 
-        return array_combine(
-            range($currentYear, $currentYear - 5),
-            range($currentYear, $currentYear - 5)
-        );
+        $allYears = array_unique(array_merge($standard, $dbYears));
+        rsort($allYears);
+
+        return array_combine($allYears, $allYears);
     }
 
     /**
@@ -270,7 +286,7 @@ final class PlafondAnggaranService
     }
 
     /** @param  array{tahun: int|string, org: string, sandi: string, pon: string, kontrak: string}  $f */
-    private function lookupDto(array $f, string $orgContr): PlafondAnggaranDto
+    private function lookupDto(array $f, string $orgContr, ?Vpon $pon): PlafondAnggaranDto
     {
         return new PlafondAnggaranDto(
             tahun: (string) $f['tahun'],
@@ -279,12 +295,15 @@ final class PlafondAnggaranService
             pon: $f['pon'],
             orgContr: $orgContr,
             iContr: $f['kontrak'],
+            pgm: $pon?->c_pgm ?? '',
+            pgmSub: $pon?->c_pgm_sub ?? '',
         );
     }
 
-    private function canUpdate(string $tahun, string $contrStat): bool
+    private function canUpdate(string $tahun, string $contrStat, string $bdgtStat = 'OPN'): bool
     {
-        return (int) $tahun === now()->year && $contrStat === 'A3';
+        // c_bdgt_stat = CLS -> plafond dikunci, tidak bisa diupdate
+        return (int) $tahun === now()->year && $contrStat === 'A3' && $bdgtStat !== 'CLS';
     }
 
     private function resolveActorNik(): string

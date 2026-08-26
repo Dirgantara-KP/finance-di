@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\TmbdgtPlafond;
 use App\Models\Vororg;
 use Illuminate\Support\Facades\Cache;
 
@@ -11,7 +12,7 @@ final class VororgRepository
     public function optionsForDropdown(): array
     {
         return Cache::remember('plafond:org_options', now()->addHour(), function () {
-            return Vororg::query()
+            $master = Vororg::query()
                 ->whereNotNull('c_org_cur')
                 ->where('c_org_assetstat', 'OPN')
                 ->orderBy('c_org_cur')
@@ -20,6 +21,20 @@ final class VororgRepository
                     $item->c_org_cur => $item->c_org_cur.' || '.$item->n_org_cur,
                 ])
                 ->toArray();
+
+            $histori = TmbdgtPlafond::query()
+                ->whereNotNull('c_org')
+                ->distinct()
+                ->pluck('c_org')
+                ->mapWithKeys(fn ($code) => [
+                    $code => $code.' || UNIT AKUNTANSI (HISTORIS)',
+                ])
+                ->toArray();
+
+            $merged = array_merge($master, $histori);
+            ksort($merged);
+
+            return $merged;
         });
     }
 

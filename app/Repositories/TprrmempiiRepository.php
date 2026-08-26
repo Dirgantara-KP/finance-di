@@ -8,6 +8,6 @@ final class TprrmempiiRepository
 {
     public function findByEmp(string $iEmp): ?Tprrmempii
     {
-        return Tprrmempii::query()->firstWhere('i_emp', $iEmp);
+        return Tprrmempii::query()->where('i_emp', $iEmp)->first();
     }
 }

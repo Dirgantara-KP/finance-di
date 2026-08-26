@@ -13,6 +13,9 @@ use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 
+/**
+ * @property-read bool $isDirty di-resolve dari getIsDirtyProperty() (Livewire magic property)
+ */
 class PlafondAnggaran extends Page implements HasActions, HasSchemas
 {
     use InteractsWithActions;
@@ -44,6 +47,10 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public $pon;
 
     public $kontrak;
+
+    public $status = 'OPEN';
+
+    public $previousStatus = 'OPEN';
 
     public $tahunOptions = [];
 
@@ -165,6 +172,8 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->existingId = null;
         $this->namaProgram = '';
         $this->namaSandi = '';
+        $this->status = 'OPEN';
+        $this->previousStatus = 'OPEN';
     }
 
     private function resetAll(): void
@@ -204,6 +213,75 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
     public function updatedKontrak(): void
     {
         $this->resetAll();
+    }
+
+    public function updatedStatus(): void
+    {
+        if (! $this->dataLoaded || ! $this->existingId) {
+            $this->status = 'OPEN';
+            $this->previousStatus = 'OPEN';
+
+            return;
+        }
+
+        if ($this->status === 'CLOSE') {
+            $this->dispatch('open-modal', id: 'confirm-close-status');
+
+            return;
+        }
+
+        // OPEN dipilih — simpan langsung ke DB
+        $this->persistStatus('OPN');
+    }
+
+    public function confirmCloseStatus(): void
+    {
+        $this->persistStatus('CLS');
+
+        $this->dispatch('close-modal', id: 'confirm-close-status');
+    }
+
+    public function cancelCloseStatus(): void
+    {
+        $this->status = 'OPEN';
+        $this->previousStatus = 'OPEN';
+
+        $this->dispatch('close-modal', id: 'confirm-close-status');
+    }
+
+    private function persistStatus(string $dbStat): void
+    {
+        if (! $this->existingId) {
+            return;
+        }
+
+        try {
+            $this->service->setStat((int) $this->existingId, $dbStat);
+
+            $this->status = $dbStat === 'CLS' ? 'CLOSE' : 'OPEN';
+            $this->previousStatus = $this->status;
+
+            $this->loadData();
+
+            Notification::make()
+                ->title($dbStat === 'CLS' ? 'Plafond Anggaran ditutup' : 'Plafond Anggaran dibuka')
+                ->success()
+                ->send();
+        } catch (ForbiddenActionException $e) {
+            Notification::make()
+                ->title('Aksi ditolak')
+                ->body($e->getMessage())
+                ->warning()
+                ->send();
+        } catch (\Throwable $e) {
+            report($e);
+
+            Notification::make()
+                ->title('Gagal mengubah status')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     /** @return array<string, string|string[]> */
@@ -419,6 +497,13 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->namaSandi = $state['namaSandi'] ?? $this->namaSandi;
         $this->cOrgContr = $state['cOrgContr'] ?? $this->cOrgContr;
         $this->existingId = $state['existingId'];
+        // client OPEN/CLOSE <-> DB OPN/CLS; kosong/null dianggap OPEN (default)
+        if ($this->existingId === null) {
+            $this->status = 'OPEN';
+        } else {
+            $this->status = ($state['stat'] === 'CLS') ? 'CLOSE' : 'OPEN';
+        }
+        $this->previousStatus = $this->status;
         $this->saldoAwal = $state['saldoAwal'];
         $this->addMonth = $state['addMonth'];
         $this->saldoAkhir = $state['saldoAkhir'];

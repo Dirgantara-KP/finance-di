@@ -3,12 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vororg extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'vrorg';
 
     protected $fillable = [
@@ -57,7 +54,6 @@ class Vororg extends Model
             'd_org_finish' => 'date',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
-            'deleted_at' => 'datetime',
         ];
     }
 }

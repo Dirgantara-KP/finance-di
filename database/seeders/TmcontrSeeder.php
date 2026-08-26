@@ -17,6 +17,8 @@ class TmcontrSeeder extends Seeder
             return;
         }
 
+        Tmcontr::query()->truncate();
+
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle, 0, ';');
         $rows = [];
@@ -27,7 +29,7 @@ class TmcontrSeeder extends Seeder
             }
 
             $rows[] = [
-                'i_id_contr' => trim($data[0]),
+                'i_id_contr' => (int) trim($data[0]),
                 'c_org_contr' => trim($data[1]),
                 'i_contr' => trim($data[2]),
                 'i_contr_ref' => trim($data[3]),

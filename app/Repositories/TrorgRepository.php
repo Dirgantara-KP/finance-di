@@ -9,7 +9,7 @@ final class TrorgRepository
 {
     public function findByOrgCur(string $cOrgCur): ?Trorg
     {
-        return Trorg::query()->firstWhere('c_org_cur', $cOrgCur);
+        return Trorg::query()->where('c_org_cur', $cOrgCur)->first();
     }
 
     /** @return array<string, string> */

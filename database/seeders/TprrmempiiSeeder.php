@@ -17,14 +17,16 @@ class TprrmempiiSeeder extends Seeder
             return;
         }
 
+        Tprrmempii::query()->truncate();
+
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle);
         $rows = [];
 
         while (($data = fgetcsv($handle)) !== false) {
             $rows[] = [
-                'i_emp' => $data[0],
-                'n_emp' => $data[1],
+                'i_emp' => trim($data[0]),
+                'n_emp' => trim($data[1]),
             ];
         }
 

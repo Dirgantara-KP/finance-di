@@ -17,14 +17,16 @@ class TrorgSeeder extends Seeder
             return;
         }
 
+        Trorg::query()->truncate();
+
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle);
         $rows = [];
 
         while (($data = fgetcsv($handle)) !== false) {
             $rows[] = [
-                'c_org_cur' => $data[0],
-                'n_org' => $data[1],
+                'c_org_cur' => trim($data[0]),
+                'n_org' => trim($data[1]),
             ];
         }
 

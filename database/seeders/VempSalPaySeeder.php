@@ -18,17 +18,19 @@ class VempsalpaySeeder extends Seeder
             return;
         }
 
+        Vempsalpay::query()->truncate();
+
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle);
         $rows = [];
 
         while (($data = fgetcsv($handle)) !== false) {
             $rows[] = [
-                'd_proc_gaji' => Carbon::parse($data[0])->toDateString(),
-                'c_org_cur' => $data[1],
-                'i_jour' => $data[2],
-                'c_bank_gaji' => $data[3],
-                'c_emp_payloc' => $data[4],
+                'd_proc_gaji' => Carbon::parse(trim($data[0]))->toDateString(),
+                'c_org_cur' => trim($data[1]),
+                'i_jour' => trim($data[2]),
+                'c_bank_gaji' => trim($data[3]),
+                'c_emp_payloc' => trim($data[4]),
             ];
 
             // Insert per 500 baris supaya tidak terlalu berat sekali jalan.

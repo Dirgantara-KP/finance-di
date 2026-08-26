@@ -18,14 +18,13 @@ class VempsalpayempSeeder extends Seeder
             return;
         }
 
+        VempSalPayEmp::query()->truncate();
+
         $handle = fopen($path, 'r');
-
         $header = fgetcsv($handle);
-
         $rows = [];
 
         while (($data = fgetcsv($handle)) !== false) {
-
             // Pastikan jumlah kolom sesuai dengan CSV terbaru
             if (count($data) < 11) {
                 $this->command->warn(
@@ -37,23 +36,17 @@ class VempsalpayempSeeder extends Seeder
             }
 
             $rows[] = [
-                'i_emp' => $data[0],
-
-                'd_proc_gaji' => Carbon::parse($data[1])->toDateString(),
-
-                'i_jour' => $data[2],
-
-                'c_org_asal' => $data[3],
-                'c_org_cur' => $data[4],
-
-                'c_cost' => $data[5],
-                'c_emp_pay' => $data[6],
-
-                'c_bank_gaji' => $data[7],
-                'c_emp_payloc' => $data[8],
-
-                'v_emp_tunjgaji' => $data[9],
-                'v_emp_potgaji' => $data[10],
+                'i_emp' => trim($data[0]),
+                'd_proc_gaji' => Carbon::parse(trim($data[1]))->toDateString(),
+                'i_jour' => trim($data[2]),
+                'c_org_asal' => trim($data[3]),
+                'c_org_cur' => trim($data[4]),
+                'c_cost' => trim($data[5]),
+                'c_emp_pay' => trim($data[6]),
+                'c_bank_gaji' => trim($data[7]),
+                'c_emp_payloc' => trim($data[8]),
+                'v_emp_tunjgaji' => trim($data[9]) !== '' ? trim($data[9]) : 0,
+                'v_emp_potgaji' => trim($data[10]) !== '' ? trim($data[10]) : 0,
             ];
 
             if (count($rows) >= 500) {

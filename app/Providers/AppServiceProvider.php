@@ -29,18 +29,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // ponytail: invalidasi cache dropdown saat master berubah. 4 model, 1 file.
-        $flushEvents = ['saved', 'deleted', 'restored'];
-
-        foreach ($flushEvents as $event) {
+        // ponytail: invalidasi cache dropdown saat master berubah. Semua model tanpa
+        // SoftDeletes (tidak ada event restored) — 5 model, 1 file.
+        foreach (['saved', 'deleted'] as $event) {
             Tmcontr::$event(fn (Tmcontr $m) => TmcontrRepository::flushCache($m->c_org_contr));
             Vororg::$event(fn () => VororgRepository::flushCache());
             Trchartacct::$event(fn () => TrchartacctRepository::flushCache());
             Vpon::$event(fn () => VponRepository::flushCache());
-        }
-
-        // Trorg tanpa SoftDeletes — tidak punya event restored().
-        foreach (['saved', 'deleted'] as $event) {
             Trorg::$event(fn () => TrorgRepository::flushCache());
         }
     }

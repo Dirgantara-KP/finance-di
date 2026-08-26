@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
         <div class="p-6">
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Tahun Anggaran <span class="text-red-500">*</span>
@@ -71,17 +71,44 @@
                         </x-filament::input.select>
                     </x-filament::input.wrapper>
                 </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Status
+                        </label>
+                        @if ($this->dataLoaded && $this->existingId)
+                            @if ($this->status === 'CLOSE')
+                                <span class="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700 ring-1 ring-inset ring-red-600/10 dark:bg-red-400/10 dark:text-red-400">
+                                    CLOSE
+                                </span>
+                            @else
+                                <span class="inline-flex items-center rounded-md bg-green-50 px-1.5 py-0.5 text-[11px] font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-400/10 dark:text-green-400">
+                                    OPEN
+                                </span>
+                            @endif
+                        @endif
+                    </div>
+                    <x-filament::input.wrapper :disabled="! $this->dataLoaded || ! $this->existingId">
+                        <x-filament::input.select
+                            wire:model.live="status"
+                            :disabled="! $this->dataLoaded || ! $this->existingId"
+                        >
+                            <option value="OPEN" @selected((string) $this->status === 'OPEN')>OPEN</option>
+                            <option value="CLOSE" @selected((string) $this->status === 'CLOSE')>CLOSE</option>
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
             </div>
 
-            <div class="mt-4 flex items-center justify-between">
-                {{-- Petunjuk singkat saat filter belum lengkap, biar user tahu langkah selanjutnya --}}
-                @unless ($this->allFiltersSelected)
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+            <div class="mt-4 flex items-center justify-between gap-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    @if (! $this->allFiltersSelected)
                         Lengkapi seluruh filter di atas untuk memuat data.
-                    </p>
-                @else
-                    <span></span>
-                @endunless
+                    @else
+                        &nbsp;
+                    @endif
+                </p>
 
                 <x-filament::button
                     wire:click="loadData"
@@ -446,5 +473,30 @@
             </x-filament::button>
         </div>
     </div>
+
+    {{-- Modal konfirmasi: ubah status ke CLOSE (terkunci, tak bisa diupdate lagi) --}}
+    <x-filament::modal id="confirm-close-status" width="md">
+        <x-slot name="heading">Konfirmasi Perubahan Status</x-slot>
+        <x-slot name="description">
+            Status Plafond Anggaran akan diubah menjadi <strong class="text-red-600 dark:text-red-400">CLOSE</strong>.
+            Plafond yang berstatus CLOSE tidak dapat diubah atau diupdate kembali. Apakah Anda yakin ingin melanjutkan?
+        </x-slot>
+
+        <div class="flex justify-end gap-3 mt-4">
+            <x-filament::button
+                color="gray"
+                wire:click="cancelCloseStatus"
+            >
+                No (Batal)
+            </x-filament::button>
+            <x-filament::button
+                color="danger"
+                icon="heroicon-m-lock-closed"
+                wire:click="confirmCloseStatus"
+            >
+                Yes (Tutup Plafond)
+            </x-filament::button>
+        </div>
+    </x-filament::modal>
     <x-filament-actions::modals />
 </x-filament-panels::page>

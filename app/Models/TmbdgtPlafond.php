@@ -4,12 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TmbdgtPlafond extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'tmbdgtplafond';
 
     /**
@@ -163,7 +160,6 @@ class TmbdgtPlafond extends Model
             'd_pmn' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
-            'deleted_at' => 'datetime',
         ];
     }
 }
