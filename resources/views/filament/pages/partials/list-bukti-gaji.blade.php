@@ -49,9 +49,9 @@
     </div>
 
     {{-- Tabel --}}
-    <div class="overflow-x-auto border rounded-lg border-gray-200 dark:border-gray-700">
-        <table class="w-full text-sm">
-            <thead class="bg-primary-700 text-white">
+    <div class="overflow-x-auto rounded-lg">
+        <table class="w-full text-sm" style="border-collapse: collapse;">
+            <thead style="background-color: var(--primary-600); color: #ffffff;">
                 <tr class="text-left">
                     <th class="py-2 px-3 font-medium">No.</th>
                     <th class="py-2 px-3 font-medium">Tanggal Gaji</th>
@@ -70,8 +70,9 @@
                     <tr
                         wire:click="pilihBarisBuktiGaji('{{ $item['tgl_gaji'] }}', '{{ $item['bank_kode'] }}', '{{ $item['bank_nama'] }}')"
                         x-on:dblclick="$wire.pilihLangsungBuktiGaji('{{ $item['tgl_gaji'] }}', '{{ $item['bank_kode'] }}', '{{ $item['bank_nama'] }}')"
+                        style="border-bottom: 1px solid #e5e7eb;"
                         @class([
-                            'cursor-pointer border-b border-gray-100 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20',
+                            'cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20',
                             'bg-primary-100 dark:bg-primary-900/40 ring-1 ring-inset ring-primary-500' => $isSelected,
                             'bg-blue-50/50 dark:bg-gray-800/40' => ! $isSelected && $i % 2 === 1,
                         ])
@@ -91,8 +92,15 @@
         </table>
     </div>
 
+    <style>
+        .fd-page-btn:hover:not(:disabled) {
+            border-color: var(--primary-500) !important;
+            color: var(--primary-600) !important;
+        }
+    </style>
+
     {{-- Pagination --}}
-    <div class="flex items-center justify-between text-sm">
+    <div class="flex items-center justify-between text-sm" style="margin-top: 4px;">
         <p class="text-gray-500">
             Menampilkan {{ count($hasil['items']) ? ($hasil['page'] - 1) * $hasil['perPage'] + 1 : 0 }}
             sampai {{ ($hasil['page'] - 1) * $hasil['perPage'] + count($hasil['items']) }}
@@ -101,24 +109,26 @@
 
         <div class="flex items-center gap-1">
             <button type="button" wire:click="gantiHalamanBuktiGaji({{ max($hasil['page'] - 1, 1) }})"
-                class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 disabled:opacity-40"
+                class="fd-page-btn px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40"
                 @disabled($hasil['page'] <= 1)>
                 &lt;
             </button>
 
             @for ($p = 1; $p <= $hasil['lastPage']; $p++)
                 <button type="button" wire:click="gantiHalamanBuktiGaji({{ $p }})"
-                    @class([
-                        'px-3 py-1 rounded border text-sm',
-                        'bg-primary-600 text-white border-primary-600' => $p === $hasil['page'],
-                        'border-gray-300 dark:border-gray-600' => $p !== $hasil['page'],
-                    ])>
+                    @if ($p === $hasil['page'])
+                        style="background-color: var(--primary-600); color: #ffffff; border-color: var(--primary-600);"
+                        class="px-3 py-1 rounded border text-sm font-medium"
+                    @else
+                        class="fd-page-btn px-3 py-1 rounded border text-sm border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                    @endif
+                >
                     {{ $p }}
                 </button>
             @endfor
 
             <button type="button" wire:click="gantiHalamanBuktiGaji({{ min($hasil['page'] + 1, $hasil['lastPage']) }})"
-                class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 disabled:opacity-40"
+                class="fd-page-btn px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40"
                 @disabled($hasil['page'] >= $hasil['lastPage'])>
                 &gt;
             </button>
@@ -126,10 +136,11 @@
     </div>
 
     {{-- Keterangan --}}
-    <div class="flex items-start gap-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 p-3 text-sm text-primary-700 dark:text-primary-300">
-        <x-heroicon-o-information-circle class="w-5 h-5 shrink-0 mt-0.5" />
+    <div class="flex items-start gap-2 rounded-lg p-3 text-sm"
+        style="margin-top: 10px; background-color: var(--primary-50); color: var(--primary-700);">
+        <x-heroicon-o-information-circle class="w-5 h-5 shrink-0 mt-0.5" style="color: var(--primary-600);" />
         <div>
-            <p class="font-semibold">Keterangan</p>
+            <p class="font-semibold" style="color: var(--primary-800);">Keterangan</p>
             <p>Pilih salah satu data dengan double click pada baris atau klik tombol [Pilih] untuk menggunakan data tersebut. Data yang dipilih akan digunakan sebagai Tanggal Proses Gaji dan Bank Pembayaran.</p>
         </div>
     </div>
