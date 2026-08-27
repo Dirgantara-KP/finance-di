@@ -150,11 +150,28 @@
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Tampilkan Rekap Gaji per Cost Center
                     </span>
-                    <x-filament::button color="primary" wire:click="showRekapCostCenter"
+                                        <x-filament::button color="primary" wire:click="showRekapCostCenter"
                         class="shrink-0">Show</x-filament::button>
                 </div>
-            </div> 
-        </div> 
+
+                {{-- TODO(April): sementara field teks manual untuk parameter Insert/Update
+                     (c_org_id, :OrgCur, :OrgGaji) sampai sumber resminya ditentukan
+                     (mis. dari org mapping user login). Ganti ke dropdown/autocomplete
+                     begitu sudah jelas. --}}
+                <div class="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-dashed border-gray-300 p-4 dark:border-white/10 sm:grid-cols-3">
+                    <x-filament::input.wrapper label="Eselon (koma, u/ Show & Update :OrgGaji)">
+                        <x-filament::input type="text" wire:model="orgEselonInput" placeholder="CF,IT" />
+                    </x-filament::input.wrapper>
+
+                    <x-filament::input.wrapper label="Org. Pemroses (Insert :c_org_id)">
+                        <x-filament::input type="text" wire:model="organisasiPemroses" />
+                    </x-filament::input.wrapper>
+
+                    <x-filament::input.wrapper label="Org. Tujuan (Update :OrgCur)">
+                        <x-filament::input type="text" wire:model="orgCurTujuan" />
+                    </x-filament::input.wrapper>
+                </div>
+            </div>
 
    {{-- 8, 9, 10. Tabel Rekap Cost Center --}}
     <div class="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
@@ -269,6 +286,7 @@
             color="success"
             icon="heroicon-m-plus"
             wire:click="insert"
+            :disabled="! $dataLoaded || $dataSudahAda"
             class="justify-center"
         >
             Insert
@@ -278,11 +296,12 @@
             color="warning"
             icon="heroicon-m-pencil-square"
             wire:click="update"
+            :disabled="! $dataLoaded || ! $dataSudahAda"
             class="justify-center"
         >
             Update
         </x-filament::button>
-
+        
         <x-filament::button
             color="danger"
             icon="heroicon-m-trash"

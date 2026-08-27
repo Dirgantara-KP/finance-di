@@ -8,6 +8,10 @@ use Illuminate\Support\Carbon;
 
 class TmempsalpaySeeder extends Seeder
 {
+    /**
+     * Import data uji dari tmempsalpay.csv (500 baris) yang diberikan.
+     * Header CSV: D_PROC_GAJI, C_ORG_CUR, I_INV_GAJI, C_BANK_GAJI, C_EMP_PAYLOC, V_EMP_TUNJGAJI, V_EMP_POTGAJI
+     */
     public function run(): void
     {
         $path = database_path('seeders/data/tmempsalpay.csv');

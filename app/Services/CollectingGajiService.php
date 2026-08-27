@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Repositories\TmemSalPayRepository;
+use App\Repositories\ThempSalRefRepository;
+use App\Repositories\TmempSalPayRepository;
 use App\Repositories\VempSalPayEmpRepository;
 use App\Repositories\VempSalPayRepository;
 use Illuminate\Support\Collection;
@@ -11,8 +12,9 @@ final class CollectingGajiService
 {
     public function __construct(
         private readonly VempSalPayRepository $repo,
-        private readonly TmemSalPayRepository $tmemSalPayRepo,
+        private readonly TmempSalPayRepository $tmemSalPayRepo,
         private readonly VempSalPayEmpRepository $vempSalPayEmpRepo,
+        private readonly ThempSalRefRepository $thempSalRefRepo,
     ) {}
 
     /**
@@ -38,11 +40,16 @@ final class CollectingGajiService
     }
 
     /**
-     * Rekap gaji per Cost Center dari data MENTAH VEMPSALPAYEMP (preview
-     * sebelum tombol Insert ditekan). Dipicu oleh tombol SHOW.
-     * Lihat: VempSalPayEmpRepository::findRekapCostCenter() — substitute Query 03.
+     * SHOW — flow FD section C:
+     * 1) cek dulu apakah kombinasi filter SUDAH ada di TMEMPSALPAY.
+     * 2) jika ADA -> tampilkan rekap dari TMEMPSALPAY (query FD point D),
+     *    Insert harus disabled, Update enabled.
+     * 3) jika BELUM ADA -> tampilkan preview agregasi dari VEMPSALPAY
+     *    (query FD point E), Insert enabled, Update disabled.
+     * Rekap Cost Center tetap DISPLAY saja (bukan tabel), tidak diedit user.
      *
-     * @return array<int, array<string, mixed>>
+     * @param  array<int, string>|null  $orgEselon
+     * @return array{sudah_ada: bool, rows: array<int, array<string, mixed>>}
      */
     public function getRekapCostCenter(
         string $tanggalProsesGaji,
@@ -51,22 +58,114 @@ final class CollectingGajiService
         ?string $nomorBukti = null,
         ?array $orgEselon = null,
     ): array {
-        $rows = $this->tmemSalPayRepo->findRekapCostCenter(
+        $sudahAda = $this->tmemSalPayRepo->existsForFilter(
             tanggalProsesGaji: $tanggalProsesGaji,
             bankKas: $bankKas,
             lokasi: $lokasi,
             nomorBukti: $nomorBukti,
-            orgEselon: $orgEselon,
         );
 
-        return $rows->map(fn ($row) => [
+        if ($sudahAda) {
+            $rows = $this->tmemSalPayRepo->findRekapCostCenter(
+                tanggalProsesGaji: $tanggalProsesGaji,
+                bankKas: $bankKas,
+                lokasi: $lokasi,
+                nomorBukti: $nomorBukti,
+                orgEselon: $orgEselon,
+            );
+
+            $mapped = $rows->map(fn ($row) => [
+                'org_cur' => $row->kode_unit_organisasi,
+                'cost_center' => $row->kode_unit_organisasi.' - '.$row->nama_unit_organisasi,
+                'lokasi' => $row->lokasi,
+                'besar_gaji' => (float) $row->besar_gaji,
+                'pihak_lain' => (float) $row->pihak_lain,
+                'yang_bersangkutan' => (float) $row->yang_bersangkutan,
+            ])->values()->all();
+
+            return ['sudah_ada' => true, 'rows' => $mapped];
+        }
+
+        $rows = $this->repo->findRekapCostCenter(
+            periodeGaji: $tanggalProsesGaji,
+            nomorGaji: $nomorBukti,
+            orgEselon: $orgEselon,
+            bankGaji: $bankKas,
+            lokasiBayar: $lokasi,
+        );
+
+        $mapped = $rows->map(fn ($row) => [
             'org_cur' => $row->kode_unit_organisasi,
             'cost_center' => $row->kode_unit_organisasi.' - '.$row->nama_unit_organisasi,
             'lokasi' => $row->lokasi,
-            'besar_gaji' => (float) $row->besar_gaji,
-            'pihak_lain' => (float) $row->pihak_lain,
-            'yang_bersangkutan' => (float) $row->yang_bersangkutan,
+            'besar_gaji' => (float) $row->v_tot_tunjgaji,
+            'pihak_lain' => (float) $row->v_tot_potgaji,
+            'yang_bersangkutan' => (float) $row->v_gaji_bersih,
         ])->values()->all();
+
+        return ['sudah_ada' => false, 'rows' => $mapped];
+    }
+
+    /**
+     * INSERT — query FD item F. Hanya boleh dijalankan ketika SHOW
+     * sebelumnya melaporkan `sudah_ada = false` (dicek ulang di sini,
+     * bukan cuma dipercaya dari state Livewire, supaya tidak terjadi
+     * duplikasi kalau ada race/klik ganda).
+     *
+     * @param  array<int, string>|null  $orgEselon
+     *
+     * @throws \RuntimeException jika data untuk filter ini sudah ada
+     */
+    public function insertCollectingGaji(
+        string $tanggalProsesGaji,
+        string $nomorBukti,
+        string $bankKas,
+        string $lokasi,
+        string $orgId,
+        string $iUser,
+        ?array $orgEselon = null,
+    ): int {
+        $sudahAda = $this->tmemSalPayRepo->existsForFilter(
+            tanggalProsesGaji: $tanggalProsesGaji,
+            bankKas: $bankKas,
+            lokasi: $lokasi,
+            nomorBukti: $nomorBukti,
+        );
+
+        if ($sudahAda) {
+            throw new \RuntimeException(
+                'Data untuk periode/no. bukti/bank/lokasi ini sudah pernah di-collecting.'
+            );
+        }
+
+        return $this->tmemSalPayRepo->insertFromVempSalPay(
+            periodeGaji: $tanggalProsesGaji,
+            nomorBuktiGaji: $nomorBukti,
+            orgEselon: $orgEselon,
+            bankGaji: $bankKas,
+            lokasiBayar: $lokasi,
+            orgId: $orgId,
+            iUser: $iUser,
+        );
+    }
+
+    /**
+     * UPDATE — query FD item H. TARGET tabel ini THEMPSALREF, bukan
+     * TMEMPSALPAY. Hanya masuk akal dijalankan setelah data sudah
+     * ter-collecting (sudah_ada = true dari SHOW).
+     *
+     * @param  array<int, string>  $orgGaji  daftar kode eselon (:OrgGaji)
+     */
+    public function updateThempSalRef(
+        string $tanggalProsesGaji,
+        string $orgCur,
+        array $orgGaji,
+    ): int {
+        return $this->thempSalRefRepo->updateOrgPayrecpt(
+            periodeGaji: $tanggalProsesGaji,
+            orgCur: $orgCur,
+            orgGaji: $orgGaji,
+        );
     }
 
     /**

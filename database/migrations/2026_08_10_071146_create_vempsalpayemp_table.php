@@ -10,20 +10,13 @@ return new class extends Migration
     {
         Schema::create('vempsalpayemp', function (Blueprint $table) {
             $table->id();
-
             $table->string('i_emp', 10);
             $table->date('d_proc_gaji');
             $table->string('i_jour', 20);
-
-            $table->string('c_org_asal', 10);
             $table->string('c_org_cur', 10);
-
-            $table->string('c_cost', 10);
-            $table->string('c_emp_pay', 10);
-
+            $table->string('c_org_asal', 10);
             $table->string('c_bank_gaji', 10);
             $table->string('c_emp_payloc', 10);
-
             $table->decimal('v_emp_tunjgaji', 15, 2)->default(0);
             $table->decimal('v_emp_potgaji', 15, 2)->default(0);
 
@@ -32,7 +25,6 @@ return new class extends Migration
             $table->index('i_jour');
             $table->index('c_org_cur');
             $table->index('c_org_asal');
-            $table->index('c_cost');
         });
     }
 

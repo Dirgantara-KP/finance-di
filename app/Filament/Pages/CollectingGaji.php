@@ -72,6 +72,33 @@ class CollectingGaji extends Page
 
     public bool $dataLoaded = false;
 
+    /**
+     * Hasil cek SHOW: apakah kombinasi filter yang aktif SUDAH ada di
+     * TMEMPSALPAY. true -> Insert disabled, Update enabled.
+     * false -> Insert enabled, Update disabled.
+     */
+    public bool $dataSudahAda = false;
+
+    /**
+     * Daftar kode eselon (2 digit), dipisah koma. Dipakai untuk mempersempit
+     * SHOW/INSERT (opsional) dan sebagai :OrgGaji pada query UPDATE (wajib).
+     * TODO(April): ganti jadi multi-select/dropdown eselon yang sebenarnya,
+     * ini masih input teks sementara supaya alur Insert/Update bisa diuji.
+     */
+    public ?string $orgEselonInput = null;
+
+    /**
+     * :OrgID pada query INSERT FD (kolom c_org_id di TMEMPSALPAY).
+     * TODO(April): sumber nilai ini belum ditentukan (Keycloak/org mapping
+     * user belum terhubung ke project) — untuk sementara diisi manual.
+     */
+    public ?string $organisasiPemroses = null;
+
+    /**
+     * :OrgCur pada query UPDATE FD (target c_org_payrecpt di THEMPSALREF).
+     */
+    public ?string $orgCurTujuan = null;
+
     public ?string $costCenterAktif = null;
 
     public ?string $namaDivisiAktif = null;
@@ -163,14 +190,33 @@ class CollectingGaji extends Page
             return;
         }
 
-        $this->rekapCostCenter = $this->service->getRekapCostCenter(
+        $hasil = $this->service->getRekapCostCenter(
             tanggalProsesGaji: $this->tanggalProsesGaji,
             bankKas: $this->bankKas,
             lokasi: $this->lokasi,
             nomorBukti: $this->noBuktiGaji,
+            orgEselon: $this->parseOrgEselon(),
         );
 
+        $this->rekapCostCenter = $hasil['rows'];
+        $this->dataSudahAda = $hasil['sudah_ada'];
         $this->dataLoaded = true;
+    }
+
+    /**
+     * @return array<int, string>|null
+     */
+    private function parseOrgEselon(): ?array
+    {
+        if (blank($this->orgEselonInput)) {
+            return null;
+        }
+
+        return collect(explode(',', $this->orgEselonInput))
+            ->map(fn ($v) => strtoupper(trim($v)))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     public function pilihNoBukti(): void
@@ -264,17 +310,92 @@ class CollectingGaji extends Page
 
     public function insert(): void
     {
-        //
+        if (! $this->dataLoaded) {
+            Notification::make()->warning()->title('Klik Show terlebih dahulu sebelum Insert.')->send();
+
+            return;
+        }
+
+        if ($this->dataSudahAda) {
+            Notification::make()->warning()->title('Data untuk filter ini sudah ada di TMEMPSALPAY, gunakan Update.')->send();
+
+            return;
+        }
+
+        if (blank($this->organisasiPemroses)) {
+            Notification::make()
+                ->warning()
+                ->title('Organisasi/eselon pemroses (c_org_id) belum diisi.')
+                ->body('Field ini sementara diisi manual — perlu diganti sumber resminya (mis. dari data user login) begitu mapping tersedia.')
+                ->send();
+
+            return;
+        }
+
+        try {
+            $jumlahBaris = $this->service->insertCollectingGaji(
+                tanggalProsesGaji: $this->tanggalProsesGaji,
+                nomorBukti: $this->noBuktiGaji ?? '%',
+                bankKas: $this->bankKas,
+                lokasi: $this->lokasi,
+                orgId: $this->organisasiPemroses,
+                iUser: (string) (auth()->user()?->getAuthIdentifier() ?? 'SYSTEM'),
+                orgEselon: $this->parseOrgEselon(),
+            );
+        } catch (\RuntimeException $e) {
+            Notification::make()->danger()->title($e->getMessage())->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->success()
+            ->title("Insert berhasil, {$jumlahBaris} baris tersimpan ke TMEMPSALPAY.")
+            ->send();
+
+        // Muat ulang SHOW supaya tabel Rekap Cost Center sekarang membaca
+        // dari TMEMPSALPAY dan tombol Insert/Update ganti state.
+        $this->showRekapCostCenter();
     }
 
     public function update(): void
     {
-        //
+        if (! $this->dataLoaded || ! $this->dataSudahAda) {
+            Notification::make()->warning()->title('Update hanya untuk data yang sudah ada di TMEMPSALPAY. Klik Show dahulu.')->send();
+
+            return;
+        }
+
+        if (blank($this->orgCurTujuan) || blank($this->orgEselonInput)) {
+            Notification::make()
+                ->warning()
+                ->title('Organisasi tujuan (:OrgCur) dan daftar eselon (:OrgGaji) wajib diisi untuk Update.')
+                ->send();
+
+            return;
+        }
+
+        $jumlahBaris = $this->service->updateThempSalRef(
+            tanggalProsesGaji: $this->tanggalProsesGaji,
+            orgCur: $this->orgCurTujuan,
+            orgGaji: $this->parseOrgEselon() ?? [],
+        );
+
+        Notification::make()
+            ->success()
+            ->title("Update berhasil, {$jumlahBaris} baris THEMPSALREF diperbarui.")
+            ->send();
     }
 
     public function delete(): void
     {
-        //
+        // TODO: menunggu konfirmasi senior soal sumber nilai :organisasi_pemroses
+        // (c_org_id) untuk query DELETE FROM TMEMPSALPAY. Jangan diimplementasikan
+        // dengan asumsi sebelum konfirmasi didapat.
+        Notification::make()
+            ->warning()
+            ->title('Fitur Delete belum diaktifkan — masih menunggu konfirmasi senior.')
+            ->send();
     }
 
     public function cancel(): void
@@ -289,6 +410,10 @@ class CollectingGaji extends Page
         $this->daftarBuktiGaji = [];
         $this->rekapCostCenter = [];
         $this->dataLoaded = false;
+        $this->dataSudahAda = false;
+        $this->orgEselonInput = null;
+        $this->organisasiPemroses = null;
+        $this->orgCurTujuan = null;
         $this->costCenterAktif = null;
         $this->namaDivisiAktif = null;
         $this->karyawanRincian = [];

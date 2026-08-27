@@ -25,10 +25,14 @@ class VempsalpaySeeder extends Seeder
         while (($data = fgetcsv($handle)) !== false) {
             $rows[] = [
                 'd_proc_gaji' => Carbon::parse($data[0])->toDateString(),
-                'c_org_cur' => $data[1],
-                'i_jour' => $data[2],
-                'c_bank_gaji' => $data[3],
-                'c_emp_payloc' => $data[4],
+                'c_org_echl' => $data[1],
+                'c_org_cur' => $data[2],
+                'i_jour' => $data[3],
+                'c_bank_gaji' => $data[4],
+                'c_emp_payloc' => $data[5],
+                'c_cost' => $data[6],
+                'v_emp_tunjgaji' => $data[7],
+                'v_emp_potgaji' => $data[8],
             ];
 
             // Insert per 500 baris supaya tidak terlalu berat sekali jalan.
