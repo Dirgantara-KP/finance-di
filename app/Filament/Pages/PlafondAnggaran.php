@@ -12,7 +12,8 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
-
+use App\Exports\PlafondAnggaranExport;
+use Maatwebsite\Excel\Facades\Excel;
 /**
  * @property-read bool $isDirty di-resolve dari getIsDirtyProperty() (Livewire magic property)
  */
@@ -494,7 +495,11 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         $this->cPgm = $state['cPgm'] ?? $this->cPgm;
         $this->cPgmSub = $state['cPgmSub'] ?? $this->cPgmSub;
         $this->namaProgram = $state['namaProgram'] ?? $this->namaProgram;
-        $this->namaSandi = $state['namaSandi'] ?? $this->namaSandi;
+
+        $this->namaSandi = ! empty($state['namaSandi'])
+            ? $state['namaSandi']
+            : ($this->sandiOptions[$this->sandi] ?? '');
+
         $this->cOrgContr = $state['cOrgContr'] ?? $this->cOrgContr;
         $this->existingId = $state['existingId'];
         // client OPEN/CLOSE <-> DB OPN/CLS; kosong/null dianggap OPEN (default)
@@ -531,11 +536,64 @@ class PlafondAnggaran extends Page implements HasActions, HasSchemas
         return 'Plafond Anggaran';
     }
 
-    public function exportExcel(): void
+    public function exportExcel()
     {
         if (! $this->dataLoaded) {
+            Notification::make()
+                ->title('Data belum dimuat')
+                ->body('Silakan muat data terlebih dahulu.')
+                ->warning()
+                ->send();
+
             return;
         }
+
+        $data = [];
+
+        $data[] = [
+            'Saldo Awal',
+            ...array_map(
+                fn ($value) => (int) $value,
+                $this->saldoAwal
+            ),
+            array_sum($this->saldoAwal),
+        ];
+
+        $data[] = [
+            'Penambahan',
+            ...array_map(
+                fn ($value) => (int) $value,
+                $this->addMonth
+            ),
+            array_sum($this->addMonth),
+        ];
+
+        $data[] = [
+            'Saldo Akhir',
+            ...array_map(
+                fn ($value) => (int) $value,
+                $this->saldoAkhir
+            ),
+            array_sum($this->saldoAkhir),
+        ];
+
+        $info = [
+            'tahun' => $this->tahunAnggaran,
+            'organisasi' => $this->organisasi,
+            'sandi' => $this->sandi,
+            'pon' => $this->pon,
+            'kontrak' => $this->kontrak,
+            'namaProgram' => $this->namaProgram,
+            'namaSandi' => $this->namaSandi,
+            'printedBy' => 'System',
+        ];
+
+        $filename = 'Plafond_Anggaran_' . $this->tahunAnggaran . '.xlsx';
+
+        return Excel::download(
+            new PlafondAnggaranExport($data, $info),
+            $filename
+        );
     }
 
     public function close(): void
