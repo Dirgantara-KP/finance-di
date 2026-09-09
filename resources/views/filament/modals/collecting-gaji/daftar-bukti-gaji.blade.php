@@ -5,17 +5,21 @@
         bank: '',
         lokasi: '',
         rows: @js($daftarBuktiGaji),
+
         get filtered() {
             return this.rows.filter(row => {
                 const matchSearch = this.search === '' || row.nomor_bukti.toLowerCase().includes(this.search.toLowerCase());
                 const matchBank = this.bank === '' || row.dibayar_via === this.bank;
                 const matchLokasi = this.lokasi === '' || row.lokasi === this.lokasi;
+
                 return matchSearch && matchBank && matchLokasi;
             });
         },
+
         get bankOptions() {
             return [...new Set(this.rows.map(r => r.dibayar_via))].sort();
         },
+
         get lokasiOptions() {
             return [...new Set(this.rows.map(r => r.lokasi))].sort();
         },
@@ -32,6 +36,7 @@
                 <x-filament::input type="text" placeholder="Cari nomor bukti gaji" x-model.debounce.300ms="search" />
             </x-filament::input.wrapper>
         </div>
+
         <div class="w-full sm:w-40">
             <x-filament::input.wrapper>
                 <x-filament::input.select x-model="bank">
@@ -42,6 +47,7 @@
                 </x-filament::input.select>
             </x-filament::input.wrapper>
         </div>
+
         <div class="w-full sm:w-40">
             <x-filament::input.wrapper>
                 <x-filament::input.select x-model="lokasi">
@@ -64,17 +70,19 @@
                     <th class="px-3 py-3 text-right text-sm font-semibold text-gray-950 dark:text-white">Aksi</th>
                 </tr>
             </thead>
+
             <tbody class="divide-y divide-gray-200 dark:divide-white/5">
                 <template x-for="row in filtered" :key="row.nomor_bukti + row.dibayar_via + row.lokasi">
                     <tr class="even:bg-gray-50 dark:even:bg-white/5">
                         <td class="px-3 py-3 text-sm font-medium text-gray-950 dark:text-white" x-text="row.nomor_bukti"></td>
                         <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="row.dibayar_via"></td>
                         <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="row.lokasi"></td>
+
                         <td class="px-3 py-3 text-right">
                             <button
                                 type="button"
                                 x-on:click="$wire.pilihBaris(row.nomor_bukti, row.dibayar_via, row.lokasi)"
-                                class="fi-btn fi-size-sm fi-color-gray inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+                                class="inline-flex items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-primary-700"
                             >
                                 Pilih
                             </button>
@@ -93,6 +101,7 @@
 
     <div class="mt-3 flex items-center justify-between">
         <span class="text-sm text-gray-500 dark:text-gray-400" x-text="filtered.length + ' data ditemukan'"></span>
+
         <x-filament::button color="gray" x-on:click="$dispatch('close-modal', { id: 'daftar-bukti-gaji' })">
             Tutup
         </x-filament::button>

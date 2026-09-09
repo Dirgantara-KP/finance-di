@@ -9,20 +9,117 @@ use Illuminate\Support\Facades\DB;
 class VempSalPayRepository
 {
     /**
-     * @param  array<int, string>|null  $orgEselon
+     * Dropdown No. Bukti Gaji.
+     * Sumber: VEMPSALPAY.
      */
-    public function findByPeriode(string $periode, ?array $orgEselon = null): Collection
-    {
+    public function findDistinctNoBukti(
+        string $tanggalProsesGaji
+    ): array {
+        return VempSalPay::query()
+            ->whereDate('d_proc_gaji', $tanggalProsesGaji)
+            ->whereNotNull('i_jour')
+            ->where('i_jour', '<>', '')
+            ->distinct()
+            ->orderBy('i_jour')
+            ->pluck('i_jour')
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Dropdown Bank/Kas.
+     * Sumber: VEMPSALPAY.
+     */
+    public function findDistinctBankGaji(
+        string $tanggalProsesGaji
+    ): array {
+        return VempSalPay::query()
+            ->whereDate('d_proc_gaji', $tanggalProsesGaji)
+            ->whereNotNull('c_bank_gaji')
+            ->where('c_bank_gaji', '<>', '')
+            ->distinct()
+            ->orderBy('c_bank_gaji')
+            ->pluck('c_bank_gaji')
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Dropdown Lokasi.
+     * WAJIB c_emp_payloc.
+     */
+    public function findDistinctLokasi(
+        string $tanggalProsesGaji
+    ): array {
+        return VempSalPay::query()
+            ->whereDate('d_proc_gaji', $tanggalProsesGaji)
+            ->whereNotNull('c_emp_payloc')
+            ->where('c_emp_payloc', '<>', '')
+            ->distinct()
+            ->orderBy('c_emp_payloc')
+            ->pluck('c_emp_payloc')
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Popup Daftar Bukti Gaji.
+     *
+     * FD:
+     * WHERE periode bulan
+     * AND SUBSTR(c_org_cur, 1, 2) IN (:organisasi)
+     *
+     * Filter bank/lokasi bersifat opsional.
+     */
+    public function findByPeriode(
+        string $periode,
+        ?array $orgEselon = null,
+        ?string $bankKas = null,
+        ?string $lokasi = null,
+    ): Collection {
         return VempSalPay::query()
             ->selectRaw(
-                'DISTINCT i_jour AS NOMOR_BUKTI_GAJI, c_bank_gaji AS DIBAYAR_VIA, c_emp_payloc AS LOKASI'
+                'DISTINCT
+                    i_jour AS NOMOR_BUKTI_GAJI,
+                    c_bank_gaji AS DIBAYAR_VIA,
+                    c_emp_payloc AS LOKASI'
             )
-            ->whereRaw("DATE_FORMAT(d_proc_gaji, '%Y-%m') = ?", [$periode])
+            ->whereRaw(
+                "DATE_FORMAT(d_proc_gaji, '%Y-%m') = ?",
+                [$periode]
+            )
             ->when(
                 ! empty($orgEselon),
-                fn ($q) => $q->whereIn(DB::raw('SUBSTRING(c_org_cur, 1, 2)'), $orgEselon)
+                fn ($query) => $query->whereIn(
+                    DB::raw('SUBSTRING(c_org_cur, 1, 2)'),
+                    $orgEselon
+                )
             )
-            ->groupBy('i_jour', 'c_bank_gaji', 'c_emp_payloc')
+            ->when(
+                filled($bankKas),
+                fn ($query) => $query->where(
+                    'c_bank_gaji',
+                    $bankKas
+                )
+            )
+            ->when(
+                filled($lokasi),
+                fn ($query) => $query->where(
+                    'c_emp_payloc',
+                    $lokasi
+                )
+            )
+            ->groupBy(
+                'i_jour',
+                'c_bank_gaji',
+                'c_emp_payloc'
+            )
             ->orderBy('NOMOR_BUKTI_GAJI')
             ->orderBy('DIBAYAR_VIA')
             ->orderBy('LOKASI')
@@ -30,52 +127,90 @@ class VempSalPayRepository
     }
 
     /**
-     * Rekap Cost Center dari data MENTAH VEMPSALPAY (dipakai saat kombinasi
-     * filter belum punya baris di TMEMPSALPAY). Query FD point E, join TRORG,
-     * GROUP BY termasuk c_cost — jangan dihilangkan karena dipakai lagi saat
-     * INSERT ke TMEMPSALPAY.
+     * Preview Rekap Cost Center dari VEMPSALPAY.
      *
-     * @param  array<int, string>|null  $orgEselon
+     * Dipakai ketika kombinasi filter belum ditemukan
+     * di TMEMPSALPAY.
      */
     public function findRekapCostCenter(
-        string $periodeGaji,
+        string $tanggalProsesGaji,
         ?string $nomorGaji = null,
-        ?array $orgEselon = null,
         ?string $bankGaji = null,
         ?string $lokasiBayar = null,
     ): Collection {
-        return Vempsalpay::query()
+        return VempSalPay::query()
             ->from('vempsalpay as a')
-            ->join('trorg as b', 'a.c_org_cur', '=', 'b.c_org_cur')
-            ->selectRaw('a.c_org_echl AS c_org_echl')
-            ->selectRaw('a.c_org_cur AS kode_unit_organisasi')
-            ->selectRaw('b.n_org AS nama_unit_organisasi')
-            ->selectRaw('a.c_emp_payloc AS lokasi')
-            ->selectRaw('SUM(a.v_emp_tunjgaji) AS v_tot_tunjgaji')
-            ->selectRaw('SUM(a.v_emp_potgaji) AS v_tot_potgaji')
-            ->selectRaw('SUM(a.v_emp_tunjgaji) - SUM(a.v_emp_potgaji) AS v_gaji_bersih')
-            ->selectRaw('a.c_cost AS coa')
-            ->where('a.d_proc_gaji', $periodeGaji)
-            ->where(
-                'a.i_jour',
-                'like',
-                $nomorGaji !== null && $nomorGaji !== '' ? $nomorGaji : '%'
+            ->join(
+                'trorg as b',
+                'a.c_org_cur',
+                '=',
+                'b.c_org_cur'
+            )
+            ->selectRaw(
+                'a.c_org_echl AS org_echl'
+            )
+            ->selectRaw(
+                'a.c_org_cur AS org_cur'
+            )
+            ->selectRaw(
+                'a.c_org_cur AS kode_unit_organisasi'
+            )
+            ->selectRaw(
+                'b.n_org AS nama_unit_organisasi'
+            )
+            ->selectRaw(
+                "CONCAT(a.c_org_cur, ' - ', b.n_org) AS cost_center"
+            )
+            ->selectRaw(
+                'a.c_emp_payloc AS lokasi'
+            )
+            ->selectRaw(
+                'SUM(a.v_emp_tunjgaji) AS besar_gaji'
+            )
+            ->selectRaw(
+                'SUM(a.v_emp_potgaji) AS pihak_lain'
+            )
+            ->selectRaw(
+                'SUM(a.v_emp_tunjgaji) - SUM(a.v_emp_potgaji) AS yang_bersangkutan'
+            )
+            ->selectRaw(
+                'a.c_cost AS coa'
+            )
+            ->whereDate(
+                'a.d_proc_gaji',
+                $tanggalProsesGaji
             )
             ->when(
-                ! empty($orgEselon),
-                fn ($q) => $q->whereIn('a.c_org_echl', $orgEselon)
+                filled($nomorGaji),
+                fn ($query) => $query->where(
+                    'a.i_jour',
+                    'like',
+                    $nomorGaji
+                )
             )
-            ->where(
-                'a.c_bank_gaji',
-                'like',
-                $bankGaji !== null && $bankGaji !== '' ? $bankGaji : '%'
+            ->when(
+                filled($bankGaji),
+                fn ($query) => $query->where(
+                    'a.c_bank_gaji',
+                    'like',
+                    $bankGaji
+                )
             )
-            ->where(
+            ->when(
+                filled($lokasiBayar),
+                fn ($query) => $query->where(
+                    'a.c_emp_payloc',
+                    'like',
+                    $lokasiBayar
+                )
+            )
+            ->groupBy(
+                'a.c_org_echl',
+                'a.c_org_cur',
+                'b.n_org',
                 'a.c_emp_payloc',
-                'like',
-                $lokasiBayar !== null && $lokasiBayar !== '' ? $lokasiBayar : '%'
+                'a.c_cost'
             )
-            ->groupBy('a.c_org_echl', 'a.c_org_cur', 'b.n_org', 'a.c_emp_payloc', 'a.c_cost')
             ->orderByRaw('1, 2, 4')
             ->get();
     }

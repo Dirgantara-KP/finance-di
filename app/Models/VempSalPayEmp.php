@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
     'i_jour',
     'c_org_cur',
     'c_org_asal',
+    'c_cost',
+    'c_emp_pay',
     'c_bank_gaji',
     'c_emp_payloc',
     'v_emp_tunjgaji',

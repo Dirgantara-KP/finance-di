@@ -7,10 +7,7 @@ use Illuminate\Database\Seeder;
 
 class TrorgSeeder extends Seeder
 {
-    /**
-     * Import data uji dari trorg.csv (35 baris) yang diberikan.
-     * Header CSV: C_ORG_CUR, N_ORG
-     */
+    
     public function run(): void
     {
         $path = database_path('seeders/data/trorg.csv');

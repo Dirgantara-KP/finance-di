@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
     'c_cost',
     'v_emp_tunjgaji',
     'v_emp_potgaji',
+    'v_gaji_bersih',
 ])]
 class Vempsalpay extends Model
 {
@@ -26,6 +27,7 @@ class Vempsalpay extends Model
             'd_proc_gaji' => 'date',
             'v_emp_tunjgaji' => 'decimal:2',
             'v_emp_potgaji' => 'decimal:2',
+            'v_gaji_bersih' => 'decimal:2',
         ];
     }
 }

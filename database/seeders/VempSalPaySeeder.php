@@ -19,23 +19,35 @@ class VempsalpaySeeder extends Seeder
         }
 
         $handle = fopen($path, 'r');
-        $header = fgetcsv($handle);
+
+        if ($handle === false) {
+            $this->command->error("Gagal membuka file: {$path}");
+
+            return;
+        }
+
+        fgetcsv($handle);
+
         $rows = [];
 
         while (($data = fgetcsv($handle)) !== false) {
+            if (count($data) < 10) {
+                continue;
+            }
+
             $rows[] = [
                 'd_proc_gaji' => Carbon::parse($data[0])->toDateString(),
-                'c_org_echl' => $data[1],
-                'c_org_cur' => $data[2],
-                'i_jour' => $data[3],
-                'c_bank_gaji' => $data[4],
-                'c_emp_payloc' => $data[5],
-                'c_cost' => $data[6],
-                'v_emp_tunjgaji' => $data[7],
-                'v_emp_potgaji' => $data[8],
+                'i_jour' => $data[1],
+                'c_bank_gaji' => $data[2],
+                'c_emp_payloc' => $data[3],
+                'c_org_echl' => $data[4],
+                'c_org_cur' => $data[5],
+                'v_emp_tunjgaji' => $data[6],
+                'v_emp_potgaji' => $data[7],
+                'v_gaji_bersih' => $data[8],
+                'c_cost' => $data[9],
             ];
 
-            // Insert per 500 baris supaya tidak terlalu berat sekali jalan.
             if (count($rows) >= 500) {
                 Vempsalpay::query()->insert($rows);
                 $rows = [];
@@ -48,6 +60,10 @@ class VempsalpaySeeder extends Seeder
 
         fclose($handle);
 
-        $this->command->info('VempsalpaySeeder selesai: '.Vempsalpay::query()->count().' baris.');
+        $this->command->info(
+            'VempsalpaySeeder selesai: '
+            .Vempsalpay::query()->count()
+            .' baris.'
+        );
     }
 }

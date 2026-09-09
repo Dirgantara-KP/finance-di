@@ -12,12 +12,27 @@ return new class extends Migration
             $table->id();
 
             $table->date('d_proc_gaji');
+            $table->char('c_org_echl', 2);
             $table->char('c_org_cur', 6);
             $table->string('i_jour', 50);
             $table->char('c_bank_gaji', 4);
             $table->char('c_emp_payloc', 5);
+            $table->char('c_cost', 5);
 
-            $table->index(['d_proc_gaji', 'i_jour'], 'idx_vempsalpay_proses_bukti');
+            $table->decimal('v_emp_tunjgaji', 15, 2)->default(0);
+            $table->decimal('v_emp_potgaji', 15, 2)->default(0);
+            $table->decimal('v_gaji_bersih', 15, 2)->default(0);
+
+            $table->index(
+                ['d_proc_gaji', 'i_jour'],
+                'idx_vempsalpay_proses_bukti'
+            );
+
+            $table->index('c_org_echl');
+            $table->index('c_org_cur');
+            $table->index('c_bank_gaji');
+            $table->index('c_emp_payloc');
+            $table->index('c_cost');
         });
     }
 

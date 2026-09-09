@@ -7,10 +7,7 @@ use Illuminate\Database\Seeder;
 
 class TprrmempiiSeeder extends Seeder
 {
-    /**
-     * Import data uji dari tprrmempii.csv yang diberikan.
-     * Header CSV: I_EMP, N_EMP
-     */
+    
     public function run(): void
     {
         $path = database_path('seeders/data/tprrmempii.csv');
